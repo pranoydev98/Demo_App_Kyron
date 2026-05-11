@@ -16,6 +16,7 @@ export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState(null)
   const [activeTab, setActiveTab] = useState('eligibility')
+  const [tabKey, setTabKey] = useState(0)
 
   useEffect(() => {
     const getUser = async () => {
@@ -35,39 +36,17 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar
-      <div className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
-        <h1 className="text-xl font-bold text-blue-600 mb-1">The Insurance App</h1>
-        <p className="text-xs text-gray-400 mb-8">AI Powered Billing Platform</p>
-
-        <nav className="flex flex-col gap-1 flex-1">
-          {TABS.map(tab => (
-            <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-              className={`text-left px-3 py-2.5 rounded-lg text-sm font-medium transition flex items-center gap-2 ${
-                activeTab === tab.key ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
-              }`}>
-              <span>{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-
-        <div className="border-t pt-4">
-          <p className="text-xs text-gray-400 mb-2 truncate">{user?.email}</p>
-          <button onClick={handleSignOut} className="text-sm text-red-500 hover:text-red-700">Sign Out</button>
-        </div>
-      </div> */}
 
       {/* Sidebar */}
 <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
   <div className="p-6 border-b border-gray-100">
-    <h1 className="text-xl font-bold text-blue-600">Kyron Medical</h1>
+    <h1 className="text-xl font-bold text-blue-600">The Insurance App</h1>
     <p className="text-xs text-gray-400 mt-0.5">AI-Powered Billing Platform</p>
   </div>
 
   <nav className="flex flex-col gap-1 p-4 flex-1">
     {TABS.map(tab => (
-      <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+      <button key={tab.key} onClick={() => { setActiveTab(tab.key); if (tab.key === activeTab) setTabKey(k => k + 1) }}
         className={`text-left px-3 py-2.5 rounded-lg text-sm font-medium transition flex items-center gap-2 ${
           activeTab === tab.key ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
         }`}>
@@ -85,7 +64,7 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <div className="flex-1 p-8">
-        {activeTab === 'eligibility' && <EligibilityTab />}
+        {activeTab === 'eligibility' && <EligibilityTab key={tabKey} />}
         {activeTab === 'analytics' && <AnalyticsTab />}
         {activeTab === 'appeals' && <AppealsTab />}
       </div>
@@ -127,14 +106,46 @@ async function handleBulkUpload(e, onDone) {
         cpt_codes: row['CPT_Code_1*'] || row['cpt_codes'] || '',
         place_of_service: row['Place_Of_Service_1'] || row['place_of_service'] || '',
         status: 'Pending',
-      })).filter(r => r.first_name && r.last_name)
+      }))
+
+      const requiredFields = ['first_name', 'last_name', 'date_of_birth', 'sex', 'phone', 'insurance_company', 'member_id', 'group_number', 'plan_name', 'network_type', 'date_of_service', 'facility', 'facility_npi', 'physician', 'physician_npi', 'cpt_codes', 'place_of_service']
+      const invalid = mapped.filter(r => requiredFields.some(f => !r[f]))
+      const valid = mapped.filter(r => requiredFields.every(f => r[f]))
+
+      if (valid.length === 0) {
+        alert(`No valid rows found. All rows are missing required fields. Required: ${requiredFields.join(', ')}`)
+        return
+      }
+
+      if (invalid.length > 0) {
+        const proceed = confirm(`${invalid.length} row(s) are missing required fields and will be skipped. Upload ${valid.length} valid row(s)?`)
+        if (!proceed) return
+      }
+
+      const mapped2 = valid
+
+      mapped2.forEach(r => {
+  if (r.date_of_birth) {
+    const d = new Date(r.date_of_birth)
+    if (!isNaN(d)) r.date_of_birth = d.toISOString().split('T')[0]
+  }
+  if (r.date_of_service) {
+    const d = new Date(r.date_of_service)
+    if (!isNaN(d)) r.date_of_service = d.toISOString().split('T')[0]
+  }
+})
+
+      const dateInvalid = mapped2.filter(r => {
+      if (!r.date_of_birth || !r.date_of_service) return false
+        return new Date(r.date_of_birth) >= new Date(r.date_of_service)
+      })
 
       if (mapped.length === 0) {
         alert('No valid rows found. Check your column headers.')
         return
       }
 
-      const { error } = await supabase.from('eligibility_checks').insert(mapped)
+      const { error } = await supabase.from('eligibility_checks').insert(mapped2)
       if (error) alert('Upload error: ' + error.message)
       else {
         alert(`Successfully uploaded ${mapped.length} records!`)
@@ -185,7 +196,39 @@ function EligibilityTab() {
           <h2 className="text-2xl font-bold text-gray-800">Eligibility & Benefits</h2>
           <p className="text-gray-500 text-sm mt-1">Verify patient coverage before appointments</p>
         </div>
+        {/* <div className="flex gap-3">
+          <button onClick={() => document.getElementById('csv-upload').click()}
+            className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-600 hover:bg-gray-50 transition">
+            📁 Upload CSV
+          </button>
+          <input id="csv-upload" type="file" accept=".csv,.xlsx" className="hidden"
+            onChange={(e) => handleBulkUpload(e, fetchChecks)} />
+          <button onClick={() => setShowForm(true)}
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition">
+            + New Check
+          </button>
+        </div> */}
         <div className="flex gap-3">
+          <button onClick={() => {
+            const headers = 'first_name,last_name,date_of_birth,sex,phone,insurance_company,member_id,group_number,plan_name,network_type,date_of_service,facility,facility_npi,physician,physician_npi,cpt_codes,place_of_service'
+            const samples = `John,Smith,1985-03-15,Male,555-0101,UnitedHealthcare,UHC-889012,GRP-44521,Gold PPO,PPO,2026-02-15,Metro General Hospital,1234567890,Dr. Sarah Chen,9876543210,99213,Office
+Maria,Garcia,1992-07-22,Female,555-0102,Aetna,AET-556789,GRP-88234,Silver HMO,HMO,2026-02-16,Riverside Medical Center,1122334455,Dr. James Wilson,5566778899,99214,Office
+Robert,Johnson,1978-11-30,Male,555-0103,Cigna,CIG-334567,GRP-77123,Platinum PPO,PPO,2026-02-17,St. Mary's Hospital,2233445566,Dr. Lisa Park,6677889900,99215,Outpatient Hospital
+Emily,Davis,2001-01-08,Female,555-0104,Blue Cross,BCB-778901,GRP-55678,Bronze EPO,EPO,2026-02-18,Valley Health Center,3344556677,Dr. Michael Brown,7788990011,99213,Telehealth
+William,Taylor,1968-05-19,Male,555-0105,Humana,HUM-112345,GRP-99012,Gold HMO,HMO,2026-02-19,Pacific Medical Group,4455667788,Dr. Amy Rodriguez,8899001122,90837,Office
+Sarah,Martinez,1990-03-25,Female,555-0106,Kaiser Permanente,KP-445566,GRP-33210,Silver PPO,PPO,2026-02-20,Sunnyvale Community Hospital,5566778800,Dr. David Kim,9900112233,99214,Emergency Room
+James,Anderson,1955-12-01,Male,555-0107,Medicare,MCR-998877,GRP-11200,Medicare Advantage,HMO,2026-02-21,Veterans Memorial Hospital,6677889911,Dr. Rachel Green,1011121314,99215,Inpatient Hospital
+Linda,Thomas,1983-09-14,Female,555-0108,Anthem,ANT-667788,GRP-44300,Gold PPO,PPO,2026-02-22,Lakeside Medical Center,7788990022,Dr. Kevin Patel,1213141516,99213,Office
+Carlos,Hernandez,1975-06-28,Male,555-0109,Molina Healthcare,MOL-223344,GRP-77500,Medicaid Managed,HMO,2026-02-23,Central Valley Clinic,8899001133,Dr. Susan Lee,1314151617,90834,Ambulatory Surgical Center
+Patricia,Wilson,1998-02-10,Female,555-0110,Tricare,TRI-889900,GRP-66100,Prime Select,PPO,2026-02-24,Fort Sam Medical Center,9900112244,Dr. Thomas Wright,1415161718,99395,Office`
+            const blob = new Blob([headers + '\n' + samples], { type: 'text/csv' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url; a.download = 'eligibility_template.csv'; a.click()
+          }}
+            className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-600 hover:bg-gray-50 transition">
+            ⬇️ Template
+          </button>
           <button onClick={() => document.getElementById('csv-upload').click()}
             className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-600 hover:bg-gray-50 transition">
             📁 Upload CSV
@@ -280,23 +323,44 @@ function EligibilityForm({ onBack, onCreated }) {
     setOcrLoading(false)
   }
 
-  const handleSubmit = async () => {
-    setLoading(true)
-    setError('')
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+const handleSubmit = async () => {
+  const required = [
+    ['first_name', 'First Name'], ['last_name', 'Last Name'], ['date_of_birth', 'Date of Birth'],
+    ['sex', 'Sex'], ['phone', 'Phone'], ['insurance_company', 'Insurance Company'],
+    ['member_id', 'Member ID'], ['group_number', 'Group Number'], ['plan_name', 'Plan Name'],
+    ['network_type', 'Network Type'], ['date_of_service', 'Date of Service'],
+    ['facility', 'Facility Name'], ['facility_npi', 'Facility NPI'],
+    ['physician', 'Provider Name'], ['physician_npi', 'Provider NPI'],
+    ['cpt_codes', 'CPT Codes'], ['place_of_service', 'Place of Service'],
+  ]
 
-    const { error } = await supabase.from('eligibility_checks').insert({
-      ...form,
-      date_of_birth: form.date_of_birth || null,
-      date_of_service: form.date_of_service || null,
-      user_id: user.id,
-    })
-
-    if (error) setError(error.message)
-    else onCreated()
-    setLoading(false)
+  const missing = required.filter(([key]) => !form[key]?.trim())
+  if (missing.length > 0) {
+    setError(`Missing required fields: ${missing.map(([_, label]) => label).join(', ')}`)
+    return
   }
+
+  if (form.date_of_birth && form.date_of_service && new Date(form.date_of_birth) >= new Date(form.date_of_service)) {
+    setError('Date of Birth must be before Date of Service')
+    return
+  }
+
+  setLoading(true)
+  setError('')
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
+  const { error } = await supabase.from('eligibility_checks').insert({
+    ...form,
+    date_of_birth: form.date_of_birth || null,
+    date_of_service: form.date_of_service || null,
+    user_id: user.id,
+  })
+
+  if (error) setError(error.message)
+  else onCreated()
+  setLoading(false)
+}
 
   const inputClass = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
   const labelClass = "text-xs text-gray-500 mb-1 block font-medium"
@@ -334,7 +398,7 @@ function EligibilityForm({ onBack, onCreated }) {
               <option>Male</option><option>Female</option><option>Other</option>
             </select>
           </div>
-          <div><label className={labelClass}>Phone</label><input name="phone" value={form.phone} onChange={handleChange} className={inputClass} /></div>
+          <div><label className={labelClass}>Phone *</label><input name="phone" value={form.phone} onChange={handleChange} className={inputClass} /></div>
         </div>
       </div>
 
@@ -346,9 +410,9 @@ function EligibilityForm({ onBack, onCreated }) {
           <div><label className={labelClass}>Member ID *</label><input name="member_id" value={form.member_id} onChange={handleChange} className={inputClass} /></div>
         </div>
         <div className="grid grid-cols-3 gap-4 mt-4">
-          <div><label className={labelClass}>Group Number</label><input name="group_number" value={form.group_number} onChange={handleChange} className={inputClass} /></div>
-          <div><label className={labelClass}>Plan Name</label><input name="plan_name" value={form.plan_name} onChange={handleChange} className={inputClass} /></div>
-          <div><label className={labelClass}>Network Type</label><input name="network_type" value={form.network_type} onChange={handleChange} className={inputClass} /></div>
+          <div><label className={labelClass}>Group Number *</label><input name="group_number" value={form.group_number} onChange={handleChange} className={inputClass} /></div>
+          <div><label className={labelClass}>Plan Name *</label><input name="plan_name" value={form.plan_name} onChange={handleChange} className={inputClass} /></div>
+          <div><label className={labelClass}>Network Type *</label><input name="network_type" value={form.network_type} onChange={handleChange} className={inputClass} /></div>
         </div>
       </div>
 
@@ -367,9 +431,9 @@ function EligibilityForm({ onBack, onCreated }) {
           <div><label className={labelClass}>Provider NPI *</label><input name="physician_npi" value={form.physician_npi} onChange={handleChange} className={inputClass} /></div>
         </div>
         <div className="grid grid-cols-2 gap-4 mt-4">
-          <div><label className={labelClass}>CPT Codes</label><input name="cpt_codes" placeholder="e.g. 99213, 99214" value={form.cpt_codes} onChange={handleChange} className={inputClass} /></div>
+          <div><label className={labelClass}>CPT Codes *</label><input name="cpt_codes" placeholder="e.g. 99213, 99214" value={form.cpt_codes} onChange={handleChange} className={inputClass} /></div>
           <div>
-            <label className={labelClass}>Place of Service</label>
+            <label className={labelClass}>Place of Service *</label>
             <select name="place_of_service" value={form.place_of_service} onChange={handleChange} className={inputClass}>
               <option value="">Select...</option>
               <option>Office</option><option>Outpatient Hospital</option><option>Inpatient Hospital</option>
@@ -391,6 +455,9 @@ function EligibilityForm({ onBack, onCreated }) {
 
 function EligibilityDetail({ check, onBack }) {
   const [callLoading, setCallLoading] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editForm, setEditForm] = useState({ ...check })
+  const [saving, setSaving] = useState(false)
   const [callResult, setCallResult] = useState(
     check.call_summary ? {
       summary: check.call_summary,
@@ -457,15 +524,59 @@ function EligibilityDetail({ check, onBack }) {
     setCallLoading(false)
   }
 
+  const handleDelete = async () => {
+  if (!confirm('Are you sure you want to delete this eligibility check?')) return
+  await supabase.from('eligibility_checks').delete().eq('id', check.id)
+  onBack()
+}
+
+const handleSave = async () => {
+  setSaving(true)
+  const { error } = await supabase.from('eligibility_checks').update({
+    first_name: editForm.first_name,
+    last_name: editForm.last_name,
+    date_of_birth: editForm.date_of_birth || null,
+    sex: editForm.sex,
+    phone: editForm.phone,
+    insurance_company: editForm.insurance_company,
+    member_id: editForm.member_id,
+    group_number: editForm.group_number,
+    plan_name: editForm.plan_name,
+    network_type: editForm.network_type,
+    date_of_service: editForm.date_of_service || null,
+    facility: editForm.facility,
+    facility_npi: editForm.facility_npi,
+    physician: editForm.physician,
+    physician_npi: editForm.physician_npi,
+    cpt_codes: editForm.cpt_codes,
+    place_of_service: editForm.place_of_service,
+  }).eq('id', check.id)
+
+  if (!error) {
+    Object.assign(check, editForm)
+    setIsEditing(false)
+  }
+  setSaving(false)
+}
+
+const handleRedoCall = () => {
+  setCallResult(null)
+}
+
+const handleEditChange = (e) => {
+  setEditForm({ ...editForm, [e.target.name]: e.target.value })
+}
+
   return (
     <div className="max-w-4xl">
       <button onClick={onBack} className="text-sm text-gray-500 hover:text-gray-700 mb-6">← Back to list</button>
 
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800">{check.first_name} {check.last_name}</h2>
-          <p className="text-gray-500 text-sm mt-1">{check.insurance_company} · {check.member_id}</p>
-        </div>
+    <div className="flex items-center justify-between mb-6">
+      <div>
+        <h2 className="text-2xl font-bold text-gray-800">{check.first_name} {check.last_name}</h2>
+        <p className="text-gray-500 text-sm mt-1">{check.insurance_company} · {check.member_id}</p>
+      </div>
+      <div className="flex items-center gap-3">
         <span className={`px-3 py-1 rounded-full text-xs font-medium ${
           check.status === 'Verified' ? 'bg-green-100 text-green-700' :
           check.status === 'Not Covered' ? 'bg-red-100 text-red-700' :
@@ -473,56 +584,134 @@ function EligibilityDetail({ check, onBack }) {
         }`}>
           {check.status}
         </span>
+        <button onClick={() => { setIsEditing(!isEditing); setEditForm({ ...check }) }}
+          className="px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-300 text-gray-600 hover:bg-gray-50 transition">
+          {isEditing ? '✕ Cancel' : '✏️ Edit'}
+        </button>
+        <button onClick={handleDelete}
+          className="px-3 py-1.5 rounded-lg text-xs font-medium border border-red-200 text-red-500 hover:bg-red-50 transition">
+          🗑️ Delete
+        </button>
       </div>
+    </div>
 
-      {/* Patient + Insurance Info */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="font-semibold text-gray-700 mb-3">Patient Information</h3>
-          <InfoRow label="Name" value={`${check.first_name} ${check.last_name}`} />
-          <InfoRow label="Date of Birth" value={check.date_of_birth} />
-          <InfoRow label="Sex" value={check.sex} />
-          <InfoRow label="Phone" value={check.phone} />
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="font-semibold text-gray-700 mb-3">Insurance Information</h3>
-          <InfoRow label="Company" value={check.insurance_company} />
-          <InfoRow label="Member ID" value={check.member_id} />
-          <InfoRow label="Group Number" value={check.group_number} />
-          <InfoRow label="Plan Name" value={check.plan_name} />
-          <InfoRow label="Network Type" value={check.network_type} />
-        </div>
+{isEditing ? (
+  <div className="flex flex-col gap-4 mb-6">
+    <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <h3 className="font-bold text-gray-800 mb-4">Patient Details</h3>
+      <div className="grid grid-cols-2 gap-4">
+        <div><label className="text-xs text-gray-500 mb-1 block">First Name</label><input name="first_name" value={editForm.first_name || ''} onChange={handleEditChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+        <div><label className="text-xs text-gray-500 mb-1 block">Last Name</label><input name="last_name" value={editForm.last_name || ''} onChange={handleEditChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
       </div>
-
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="font-semibold text-gray-700 mb-3">Provider & Facility</h3>
-          <InfoRow label="Provider" value={check.physician} />
-          <InfoRow label="Provider NPI" value={check.physician_npi} />
-          <InfoRow label="Facility" value={check.facility} />
-          <InfoRow label="Facility NPI" value={check.facility_npi} />
+      <div className="grid grid-cols-3 gap-4 mt-4">
+        <div><label className="text-xs text-gray-500 mb-1 block">Date of Birth</label><input type="date" name="date_of_birth" value={editForm.date_of_birth || ''} onChange={handleEditChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+        <div>
+          <label className="text-xs text-gray-500 mb-1 block">Sex</label>
+          <select name="sex" value={editForm.sex || ''} onChange={handleEditChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">Select...</option><option>Male</option><option>Female</option><option>Other</option>
+          </select>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="font-semibold text-gray-700 mb-3">Service Details</h3>
-          <InfoRow label="Date of Service" value={check.date_of_service} />
-          <InfoRow label="CPT Codes" value={check.cpt_codes} />
-          <InfoRow label="Place of Service" value={check.place_of_service} />
-        </div>
+        <div><label className="text-xs text-gray-500 mb-1 block">Phone</label><input name="phone" value={editForm.phone || ''} onChange={handleEditChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
       </div>
+    </div>
+    <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <h3 className="font-bold text-gray-800 mb-4">Insurance Details</h3>
+      <div className="grid grid-cols-2 gap-4">
+        <div><label className="text-xs text-gray-500 mb-1 block">Insurance Company</label><input name="insurance_company" value={editForm.insurance_company || ''} onChange={handleEditChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+        <div><label className="text-xs text-gray-500 mb-1 block">Member ID</label><input name="member_id" value={editForm.member_id || ''} onChange={handleEditChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+      </div>
+      <div className="grid grid-cols-3 gap-4 mt-4">
+        <div><label className="text-xs text-gray-500 mb-1 block">Group Number</label><input name="group_number" value={editForm.group_number || ''} onChange={handleEditChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+        <div><label className="text-xs text-gray-500 mb-1 block">Plan Name</label><input name="plan_name" value={editForm.plan_name || ''} onChange={handleEditChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+        <div><label className="text-xs text-gray-500 mb-1 block">Network Type</label><input name="network_type" value={editForm.network_type || ''} onChange={handleEditChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+      </div>
+    </div>
+    <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <h3 className="font-bold text-gray-800 mb-4">Provider & Facility</h3>
+      <div className="grid grid-cols-2 gap-4">
+        <div><label className="text-xs text-gray-500 mb-1 block">Facility Name</label><input name="facility" value={editForm.facility || ''} onChange={handleEditChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+        <div><label className="text-xs text-gray-500 mb-1 block">Facility NPI</label><input name="facility_npi" value={editForm.facility_npi || ''} onChange={handleEditChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+      </div>
+      <div className="grid grid-cols-2 gap-4 mt-4">
+        <div><label className="text-xs text-gray-500 mb-1 block">Provider Name</label><input name="physician" value={editForm.physician || ''} onChange={handleEditChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+        <div><label className="text-xs text-gray-500 mb-1 block">Provider NPI</label><input name="physician_npi" value={editForm.physician_npi || ''} onChange={handleEditChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+      </div>
+    </div>
+    <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <h3 className="font-bold text-gray-800 mb-4">Service Details</h3>
+      <div className="grid grid-cols-2 gap-4">
+        <div><label className="text-xs text-gray-500 mb-1 block">Date of Service</label><input type="date" name="date_of_service" value={editForm.date_of_service || ''} onChange={handleEditChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+        <div><label className="text-xs text-gray-500 mb-1 block">CPT Codes</label><input name="cpt_codes" value={editForm.cpt_codes || ''} onChange={handleEditChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+      </div>
+      <div className="mt-4">
+        <label className="text-xs text-gray-500 mb-1 block">Place of Service</label>
+        <select name="place_of_service" value={editForm.place_of_service || ''} onChange={handleEditChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="">Select...</option>
+          <option>Office</option><option>Outpatient Hospital</option><option>Inpatient Hospital</option>
+          <option>Emergency Room</option><option>Telehealth</option><option>Ambulatory Surgical Center</option>
+        </select>
+      </div>
+    </div>
+    <button onClick={handleSave} disabled={saving}
+      className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50">
+      {saving ? 'Saving...' : 'Save Changes'}
+    </button>
+  </div>
+) : (
+  <>
+    <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <h3 className="font-semibold text-gray-700 mb-3">Patient Information</h3>
+        <InfoRow label="Name" value={`${check.first_name} ${check.last_name}`} />
+        <InfoRow label="Date of Birth" value={check.date_of_birth} />
+        <InfoRow label="Sex" value={check.sex} />
+        <InfoRow label="Phone" value={check.phone} />
+      </div>
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <h3 className="font-semibold text-gray-700 mb-3">Insurance Information</h3>
+        <InfoRow label="Company" value={check.insurance_company} />
+        <InfoRow label="Member ID" value={check.member_id} />
+        <InfoRow label="Group Number" value={check.group_number} />
+        <InfoRow label="Plan Name" value={check.plan_name} />
+        <InfoRow label="Network Type" value={check.network_type} />
+      </div>
+    </div>
+    <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <h3 className="font-semibold text-gray-700 mb-3">Provider & Facility</h3>
+        <InfoRow label="Provider" value={check.physician} />
+        <InfoRow label="Provider NPI" value={check.physician_npi} />
+        <InfoRow label="Facility" value={check.facility} />
+        <InfoRow label="Facility NPI" value={check.facility_npi} />
+      </div>
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <h3 className="font-semibold text-gray-700 mb-3">Service Details</h3>
+        <InfoRow label="Date of Service" value={check.date_of_service} />
+        <InfoRow label="CPT Codes" value={check.cpt_codes} />
+        <InfoRow label="Place of Service" value={check.place_of_service} />
+      </div>
+    </div>
+  </>
+)}
 
       {/* Voice AI Agent */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-          <h3 className="text-xl font-bold text-gray-800">Voice AI Agent</h3>
+          <h3 className="text-xl font-bold text-gray-800">AI-Simulated Benefits Call</h3>
         <p className="text-sm text-blue-600 mb-6">
           Verify eligibility and benefits for {check.first_name} with {check.insurance_company}
         </p>
 
-        {!callResult && (
-          <button onClick={handlePlaceCall} disabled={callLoading}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50">
-            {callLoading ? '📞 Calling insurance...' : '📞 Place Call'}
-          </button>
-        )}
+{!callResult ? (
+  <button onClick={handlePlaceCall} disabled={callLoading}
+    className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50">
+    {callLoading ? '📞 Calling insurance...' : '📞 Place Call'}
+  </button>
+) : (
+  <button onClick={handleRedoCall}
+    className="mb-4 px-4 py-2 rounded-lg text-sm font-medium border border-blue-300 text-blue-600 hover:bg-blue-50 transition">
+    🔄 Redo Call
+  </button>
+)}
 
         {callResult && (
           <div className="flex flex-col gap-4">
