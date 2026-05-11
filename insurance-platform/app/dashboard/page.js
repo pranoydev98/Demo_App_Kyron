@@ -35,7 +35,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
+      {/* Sidebar
       <div className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
         <h1 className="text-xl font-bold text-blue-600 mb-1">The Insurance App</h1>
         <p className="text-xs text-gray-400 mb-8">AI Powered Billing Platform</p>
@@ -56,7 +56,32 @@ export default function DashboardPage() {
           <p className="text-xs text-gray-400 mb-2 truncate">{user?.email}</p>
           <button onClick={handleSignOut} className="text-sm text-red-500 hover:text-red-700">Sign Out</button>
         </div>
-      </div>
+      </div> */}
+
+      {/* Sidebar */}
+<div className="w-64 bg-white border-r border-gray-200 flex flex-col">
+  <div className="p-6 border-b border-gray-100">
+    <h1 className="text-xl font-bold text-blue-600">Kyron Medical</h1>
+    <p className="text-xs text-gray-400 mt-0.5">AI-Powered Billing Platform</p>
+  </div>
+
+  <nav className="flex flex-col gap-1 p-4 flex-1">
+    {TABS.map(tab => (
+      <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+        className={`text-left px-3 py-2.5 rounded-lg text-sm font-medium transition flex items-center gap-2 ${
+          activeTab === tab.key ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
+        }`}>
+        <span>{tab.icon}</span>
+        {tab.label}
+      </button>
+    ))}
+  </nav>
+
+  <div className="p-4 border-t border-gray-100">
+    <p className="text-xs text-gray-400 mb-2 truncate">{user?.email}</p>
+    <button onClick={handleSignOut} className="text-sm text-red-500 hover:text-red-700 font-medium">Sign Out</button>
+  </div>
+</div>
 
       {/* Main Content */}
       <div className="flex-1 p-8">
