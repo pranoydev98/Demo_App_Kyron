@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import * as XLSX from 'xlsx'
+import AnalyticsTab from './AnalyticsTab'
 
 const TABS = [
   { key: 'eligibility', label: 'Eligibility & Benefits', icon: '🛡️' },
@@ -358,15 +359,6 @@ function EligibilityForm({ onBack, onCreated }) {
         className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 mb-8">
         {loading ? 'Creating...' : 'Create Eligibility Check'}
       </button>
-    </div>
-  )
-}
-
-function AnalyticsTab() {
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-800 mb-1">Revenue Analytics</h2>
-      <p className="text-gray-500 text-sm">Denial patterns and underpayment detection</p>
     </div>
   )
 }
