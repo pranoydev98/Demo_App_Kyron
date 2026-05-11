@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import * as XLSX from 'xlsx'
 import AnalyticsTab from './AnalyticsTab'
+import AppealsTab from './AppealsTab'
 
 const TABS = [
   { key: 'eligibility', label: 'Eligibility & Benefits', icon: '🛡️' },
@@ -359,15 +360,6 @@ function EligibilityForm({ onBack, onCreated }) {
         className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 mb-8">
         {loading ? 'Creating...' : 'Create Eligibility Check'}
       </button>
-    </div>
-  )
-}
-
-function AppealsTab() {
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-800 mb-1">Appeal Letter Generator</h2>
-      <p className="text-gray-500 text-sm">AI-drafted appeal letters for denied claims</p>
     </div>
   )
 }
