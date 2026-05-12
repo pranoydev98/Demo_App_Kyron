@@ -42,6 +42,133 @@ export default function AnalyticsTab() {
     a.href = url; a.download = 'claims_template.csv'; a.click()
   }
 
+//   const downloadReport = () => {
+//   let report = '=== REVENUE ANALYTICS REPORT ===\n\n'
+//   report += `Total Claims: ${totalClaims}\n`
+//   report += `Total Billed: $${totalBilled.toLocaleString()}\n`
+//   report += `Total Denied: $${totalDenied.toLocaleString()} (${denialRate}% denial rate)\n`
+//   report += `Underpayments Detected: $${totalUnderpaid.toLocaleString()} (${underpaid.length} claims)\n`
+//   report += `Recoverable Revenue: $${(totalDenied + totalUnderpaid).toLocaleString()}\n\n`
+
+//   report += '--- TOP FIXES ---\n'
+//   topFixes.forEach((f, i) => {
+//     report += `${i + 1}. ${f.fix} (${f.code}) → $${f.recovery.toLocaleString()} across ${f.claims} claims\n`
+//   })
+
+//   report += '\n--- DENIAL RATE BY PAYER ---\n'
+//   denialByPayer.forEach(p => {
+//     report += `${p.payer}: ${p.rate}% (${p.denied}/${p.total} claims, $${p.amount.toLocaleString()} at risk)\n`
+//   })
+
+//   report += '\n--- DENIAL RATE BY CPT CODE ---\n'
+//   denialByCPT.forEach(c => {
+//     report += `${c.code} (${c.desc}): ${c.rate}% (${c.denied}/${c.total} claims, $${c.amount.toLocaleString()} at risk)\n`
+//   })
+
+//   report += '\n--- DENIAL BY REASON ---\n'
+//   denialByReason.forEach(r => {
+//     report += `${r.code} - ${r.reason}: ${r.count} claims, $${r.amount.toLocaleString()}\n`
+//   })
+
+//   if (underpaid.length > 0) {
+//     report += '\n--- UNDERPAYMENT DETAILS ---\n'
+//     underpaid.forEach(u => {
+//       report += `${u.claim_id} | ${u.payer} | CPT ${u.cpt_code} | Paid $${u.amount_paid} vs Expected $${u.expected} | Shortfall $${u.shortfall.toFixed(2)}\n`
+//     })
+//   }
+
+//   const blob = new Blob([report], { type: 'text/plain' })
+//   const url = URL.createObjectURL(blob)
+//   const a = document.createElement('a')
+//   a.href = url; a.download = 'revenue_analytics_report.txt'; a.click()
+// }
+
+const downloadReport = () => {
+  const wb = XLSX.utils.book_new()
+
+  // Sheet 1: Summary
+  const summaryData = [
+    ['REVENUE ANALYTICS REPORT'],
+    ['Generated', new Date().toLocaleDateString()],
+    [],
+    ['Metric', 'Value'],
+    ['Total Claims', totalClaims],
+    ['Total Billed', totalBilled],
+    ['Total Paid', totalPaid],
+    ['Total Denied', totalDenied],
+    ['Denial Rate', `${denialRate}%`],
+    ['Underpayments Detected', totalUnderpaid],
+    ['Underpaid Claims', underpaid.length],
+    ['Total Recoverable Revenue', totalDenied + totalUnderpaid],
+    [],
+    ['TOP FIXES'],
+    ['Issue', 'Code', 'Recovery Amount', 'Claims Affected'],
+    ...topFixes.map(f => [f.fix, f.code, f.recovery, f.claims]),
+  ]
+  const wsSummary = XLSX.utils.aoa_to_sheet(summaryData)
+  wsSummary['!cols'] = [{ wch: 30 }, { wch: 20 }, { wch: 20 }, { wch: 18 }]
+  XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary')
+
+  // Sheet 2: Denial by Payer
+  const payerData = [
+    ['Denial Rate by Payer'],
+    [],
+    ['Payer', 'Total Claims', 'Denied', 'Denial Rate', 'Amount at Risk'],
+    ...denialByPayer.map(p => [p.payer, p.total, p.denied, `${p.rate}%`, p.amount]),
+  ]
+  const wsPayer = XLSX.utils.aoa_to_sheet(payerData)
+  wsPayer['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 10 }, { wch: 15 }, { wch: 18 }]
+  XLSX.utils.book_append_sheet(wb, wsPayer, 'By Payer')
+
+  // Sheet 3: Denial by CPT Code
+  const cptData = [
+    ['Denial Rate by CPT Code'],
+    [],
+    ['CPT Code', 'Description', 'Total Claims', 'Denied', 'Denial Rate', 'Amount at Risk'],
+    ...denialByCPT.map(c => [c.code, c.desc, c.total, c.denied, `${c.rate}%`, c.amount]),
+  ]
+  const wsCPT = XLSX.utils.aoa_to_sheet(cptData)
+  wsCPT['!cols'] = [{ wch: 12 }, { wch: 28 }, { wch: 15 }, { wch: 10 }, { wch: 15 }, { wch: 18 }]
+  XLSX.utils.book_append_sheet(wb, wsCPT, 'By CPT Code')
+
+  // Sheet 4: Denial by Reason
+  const reasonData = [
+    ['Denials by Reason Code'],
+    [],
+    ['Reason Code', 'Reason', 'Claims Count', 'Total Amount'],
+    ...denialByReason.map(r => [r.code, r.reason, r.count, r.amount]),
+  ]
+  const wsReason = XLSX.utils.aoa_to_sheet(reasonData)
+  wsReason['!cols'] = [{ wch: 15 }, { wch: 35 }, { wch: 15 }, { wch: 18 }]
+  XLSX.utils.book_append_sheet(wb, wsReason, 'By Reason')
+
+  // Sheet 5: Underpayments
+  if (underpaid.length > 0) {
+    const underpaidData = [
+      ['Underpayment Detection (vs Medicare Baseline)'],
+      [],
+      ['Claim ID', 'Payer', 'CPT Code', 'Amount Billed', 'Amount Paid', 'Medicare Expected', 'Shortfall'],
+      ...underpaid.map(u => [u.claim_id, u.payer, u.cpt_code, u.amount_billed, u.amount_paid, u.expected, parseFloat(u.shortfall.toFixed(2))]),
+      [],
+      ['Total Underpayment', '', '', '', '', '', totalUnderpaid],
+    ]
+    const wsUnder = XLSX.utils.aoa_to_sheet(underpaidData)
+    wsUnder['!cols'] = [{ wch: 12 }, { wch: 22 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 18 }, { wch: 12 }]
+    XLSX.utils.book_append_sheet(wb, wsUnder, 'Underpayments')
+  }
+
+  // Sheet 6: All Claims (Raw Data)
+  const rawData = [
+    ['Claim ID', 'Payer', 'CPT Code', 'Description', 'Amount Billed', 'Amount Paid', 'Status', 'Denial Code', 'Denial Reason', 'Date of Service', 'Provider'],
+    ...claims.map(c => [c.claim_id, c.payer, c.cpt_code, c.cpt_description, c.amount_billed, c.amount_paid, c.status, c.denial_reason_code || '', c.denial_reason || '', c.date_of_service, c.provider]),
+  ]
+  const wsRaw = XLSX.utils.aoa_to_sheet(rawData)
+  wsRaw['!cols'] = [{ wch: 12 }, { wch: 22 }, { wch: 10 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 12 }, { wch: 30 }, { wch: 15 }, { wch: 20 }]
+  XLSX.utils.book_append_sheet(wb, wsRaw, 'All Claims')
+
+  XLSX.writeFile(wb, 'revenue_analytics_report.xlsx')
+}
+
 if (!loaded) {
   return (
     <div>
@@ -137,7 +264,12 @@ if (!loaded) {
           <h2 className="text-2xl font-bold text-gray-800">Revenue Analytics</h2>
           <p className="text-gray-500 text-sm mt-1">{totalClaims} claims analyzed</p>
         </div>
-      <div className="flex gap-3">
+
+<div className="flex gap-3">
+  <button onClick={downloadReport}
+    className="px-4 py-2 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition">
+    📄 Download Report
+  </button>
   <button onClick={downloadTemplate}
     className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-600 hover:bg-gray-50 transition">
     ⬇️ Template
