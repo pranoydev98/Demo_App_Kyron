@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import * as XLSX from 'xlsx'
 import AnalyticsTab from './AnalyticsTab'
 import AppealsTab from './AppealsTab'
+import { useModal } from './Modal'
 
 const TABS = [
   { key: 'eligibility', label: 'Eligibility & Benefits', icon: '🛡️' },
@@ -72,7 +73,7 @@ export default function DashboardPage() {
   )
 }
 
-async function handleBulkUpload(e, onDone) {
+async function handleBulkUpload(e, onDone, showAlert, showConfirm) {
   const file = e.target.files[0]
   if (!file) return
 
@@ -113,14 +114,13 @@ async function handleBulkUpload(e, onDone) {
       const valid = mapped.filter(r => requiredFields.every(f => r[f]))
 
       if (valid.length === 0) {
-        alert(`No valid rows found. All rows are missing required fields. Required: ${requiredFields.join(', ')}`)
-        return
-      }
-
-      if (invalid.length > 0) {
-        const proceed = confirm(`${invalid.length} row(s) are missing required fields and will be skipped. Upload ${valid.length} valid row(s)?`)
-        if (!proceed) return
-      }
+  await showAlert('No valid rows found. All rows are missing required fields.')
+  return
+}
+if (invalid.length > 0) {
+  const proceed = await showConfirm(`${invalid.length} row(s) missing required fields will be skipped. Upload ${valid.length} valid row(s)?`)
+  if (!proceed) return
+}
 
       const mapped2 = valid
 
@@ -136,23 +136,22 @@ async function handleBulkUpload(e, onDone) {
 })
 
       const dateInvalid = mapped2.filter(r => {
-      if (!r.date_of_birth || !r.date_of_service) return false
+        if (!r.date_of_birth || !r.date_of_service) return false
         return new Date(r.date_of_birth) >= new Date(r.date_of_service)
       })
-
-      if (mapped.length === 0) {
-        alert('No valid rows found. Check your column headers.')
+      if (dateInvalid.length > 0) {
+        await showAlert(`${dateInvalid.length} row(s) have Date of Birth on or after Date of Service. Please fix your data.`)
         return
       }
 
       const { error } = await supabase.from('eligibility_checks').insert(mapped2)
-      if (error) alert('Upload error: ' + error.message)
+      if (error) await showAlert('Upload error: ' + error.message)
       else {
-        alert(`Successfully uploaded ${mapped.length} records!`)
+        await showAlert(`Successfully uploaded ${mapped2.length} records!`)
         onDone()
       }
     } catch (err) {
-      alert('Failed to parse file: ' + err.message)
+      await showAlert('Failed to parse file: ' + err.message)
     }
   }
   reader.readAsArrayBuffer(file)
@@ -167,10 +166,12 @@ function EligibilityTab() {
   const [search, setSearch] = useState('')
   const [sortField, setSortField] = useState(null)
 const [sortDir, setSortDir] = useState('asc')
+const { showAlert, showConfirm, ModalComponent } = useModal()
 
 const handleDeleteCheck = async (e, id) => {
   e.stopPropagation()
-  if (!confirm('Delete this eligibility check?')) return
+  const yes = await showConfirm('Delete this eligibility check?')
+  if (!yes) return
   await supabase.from('eligibility_checks').delete().eq('id', id)
   fetchChecks()
 }
@@ -269,7 +270,7 @@ Patricia,Wilson,1998-02-10,Female,555-0110,Tricare,TRI-889900,GRP-66100,Prime Se
             📁 Upload CSV
           </button>
           <input id="csv-upload" type="file" accept=".csv,.xlsx" className="hidden"
-            onChange={(e) => handleBulkUpload(e, fetchChecks)} />
+            onChange={(e) => handleBulkUpload(e, fetchChecks, showAlert, showConfirm)} />
           <button onClick={() => setShowForm(true)}
             className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition">
             + New Check
@@ -359,6 +360,7 @@ Patricia,Wilson,1998-02-10,Female,555-0110,Tricare,TRI-889900,GRP-66100,Prime Se
           </tbody>
         </table>
       </div>
+      {ModalComponent}
     </div>
   )
 }
@@ -598,8 +600,10 @@ function EligibilityDetail({ check, onBack }) {
     setCallLoading(false)
   }
 
+  const { showConfirm, ModalComponent: DetailModal } = useModal()
   const handleDelete = async () => {
-  if (!confirm('Are you sure you want to delete this eligibility check?')) return
+  const yes = await showConfirm('Are you sure you want to delete this eligibility check?')
+  if (!yes) return
   await supabase.from('eligibility_checks').delete().eq('id', check.id)
   onBack()
 }
@@ -886,6 +890,7 @@ const handleEditChange = (e) => {
           </div>
         )}
       </div>
+      {DetailModal}
     </div>
   )
 }
