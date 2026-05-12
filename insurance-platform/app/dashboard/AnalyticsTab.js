@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import * as XLSX from 'xlsx'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts'
+import { SAMPLE_CLAIMS_CSV } from './sampleClaimsData'
 
 const COLORS = ['#3b82f6', '#ef4444', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899']
 
@@ -34,24 +35,37 @@ export default function AnalyticsTab() {
     e.target.value = ''
   }
 
-  if (!loaded) {
-    return (
-      <div>
-        <h2 className="text-2xl font-bold text-gray-800 mb-1">Revenue Analytics</h2>
-        <p className="text-gray-500 text-sm mb-8">Upload claims data to analyze denial patterns and detect underpayments</p>
+  const downloadTemplate = () => {
+    const blob = new Blob([SAMPLE_CLAIMS_CSV], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'claims_template.csv'; a.click()
+  }
 
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <span className="text-5xl mb-4 block">📊</span>
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">Upload Claims Data</h3>
-          <p className="text-sm text-gray-400 mb-6">CSV or Excel with columns: claim_id, payer, cpt_code, amount_billed, amount_paid, status, denial_reason_code, denial_reason</p>
-          <label className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-medium cursor-pointer hover:bg-blue-700 transition">
-            📁 Choose File
+if (!loaded) {
+  return (
+    <div>
+      <h2 className="text-2xl font-bold text-gray-800 mb-1">Revenue Analytics</h2>
+      <p className="text-gray-500 text-sm mb-8">Upload claims data to analyze denial patterns and detect underpayments</p>
+
+      <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+        <span className="text-5xl mb-4 block">📊</span>
+        <h3 className="text-lg font-semibold text-gray-700 mb-2">Upload Claims Data</h3>
+        <p className="text-sm text-gray-400 mb-6">CSV or Excel with columns: claim_id, payer, cpt_code, amount_billed, amount_paid, status, denial_reason_code, denial_reason</p>
+        <div className="flex gap-3 justify-center">
+          <button onClick={downloadTemplate}
+            className="px-6 py-3 border border-gray-300 text-gray-600 rounded-lg font-medium hover:bg-gray-50 transition">
+            ⬇️ Download Template
+          </button>
+          <label className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium cursor-pointer hover:bg-blue-700 transition">
+            📁 Upload Claims Data
             <input type="file" accept=".csv,.xlsx" className="hidden" onChange={handleUpload} />
           </label>
         </div>
       </div>
-    )
-  }
+    </div>
+  )
+}
 
   // Compute analytics
   const totalClaims = claims.length
@@ -123,11 +137,20 @@ export default function AnalyticsTab() {
           <h2 className="text-2xl font-bold text-gray-800">Revenue Analytics</h2>
           <p className="text-gray-500 text-sm mt-1">{totalClaims} claims analyzed</p>
         </div>
-        <label className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-600 hover:bg-gray-50 transition cursor-pointer">
-          📁 Upload New Data
-          <input type="file" accept=".csv,.xlsx" className="hidden" onChange={handleUpload} />
-        </label>
+      <div className="flex gap-3">
+  <button onClick={downloadTemplate}
+    className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-600 hover:bg-gray-50 transition">
+    ⬇️ Template
+  </button>
+  <label className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-600 hover:bg-gray-50 transition cursor-pointer">
+    📁 Upload New Data
+    <input type="file" accept=".csv,.xlsx" className="hidden" onChange={handleUpload} />
+  </label>
+</div>
+        
       </div>
+
+      
 
       {/* Hero Callouts */}
       <div className="grid grid-cols-4 gap-4 mb-6">
