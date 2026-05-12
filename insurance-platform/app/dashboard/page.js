@@ -46,7 +46,7 @@ export default function DashboardPage() {
 
   <nav className="flex flex-col gap-1 p-4 flex-1">
     {TABS.map(tab => (
-      <button key={tab.key} onClick={() => { setActiveTab(tab.key); if (tab.key === activeTab) setTabKey(k => k + 1) }}
+      <button key={tab.key} onClick={() => { setActiveTab(tab.key); setTabKey(k => k + 1) }}
         className={`text-left px-3 py-2.5 rounded-lg text-sm font-medium transition flex items-center gap-2 ${
           activeTab === tab.key ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
         }`}>
@@ -66,7 +66,7 @@ export default function DashboardPage() {
       <div className="flex-1 p-8">
         {activeTab === 'eligibility' && <EligibilityTab key={tabKey} />}
         {activeTab === 'analytics' && <AnalyticsTab />}
-        {activeTab === 'appeals' && <AppealsTab />}
+        {activeTab === 'appeals' && <AppealsTab key={tabKey} />}
       </div>
     </div>
   )
