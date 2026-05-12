@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import * as XLSX from 'xlsx'
+import { useModal } from './Modal'
 
 const DENIAL_REASONS = [
   { code: 'CO-4', reason: 'Missing modifier' },
@@ -40,9 +41,11 @@ export default function AppealsTab() {
   const [sortField, setSortField] = useState(null)
 const [sortDir, setSortDir] = useState('asc')
 
+const { showAlert, showConfirm, ModalComponent } = useModal()
 const handleDeleteCase = async (e, id) => {
   e.stopPropagation()
-  if (!confirm('Delete this appeal case?')) return
+  const yes = await showConfirm('Delete this appeal case?')
+  if (!yes) return
   await supabase.from('appeal_cases').delete().eq('id', id)
   fetchCases()
 }
@@ -133,7 +136,7 @@ William Taylor,1968-05-19,HUM-112345,Humana,CLM-2005,2025-11-07,99214,185.00,CO-
             📁 Upload CSV
           </button>
           <input id="appeal-csv-upload" type="file" accept=".csv,.xlsx" className="hidden"
-            onChange={(e) => handleAppealBulkUpload(e, fetchCases)} />
+            onChange={(e) => handleAppealBulkUpload(e, fetchCases, showAlert, showConfirm)} />
           <button onClick={() => setShowForm(true)}
             className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition">
             + New Appeal Case
@@ -216,11 +219,12 @@ William Taylor,1968-05-19,HUM-112345,Humana,CLM-2005,2025-11-07,99214,185.00,CO-
           </tbody>
         </table>
       </div>
+      {ModalComponent}
     </div>
   )
 }
 
-async function handleAppealBulkUpload(e, onDone) {
+async function handleAppealBulkUpload(e, onDone, showAlert, showConfirm) {
   const file = e.target.files[0]
   if (!file) return
   const { data: { user } } = await supabase.auth.getUser()
@@ -258,11 +262,11 @@ async function handleAppealBulkUpload(e, onDone) {
       const invalid = mapped.filter(r => requiredFields.some(f => !r[f]))
 
       if (valid.length === 0) {
-        alert('No valid rows found. Check required fields.')
+        await showAlert('No valid rows found. Check required fields.')
         return
       }
       if (invalid.length > 0) {
-        const proceed = confirm(`${invalid.length} row(s) missing required fields will be skipped. Upload ${valid.length} valid row(s)?`)
+        const proceed = await showConfirm(`${invalid.length} row(s) missing required fields will be skipped. Upload ${valid.length} valid row(s)?`)
         if (!proceed) return
       }
 
@@ -273,10 +277,10 @@ async function handleAppealBulkUpload(e, onDone) {
       })
 
       const { error } = await supabase.from('appeal_cases').insert(valid)
-      if (error) alert('Upload error: ' + error.message)
-      else { alert(`Successfully uploaded ${valid.length} appeal cases!`); onDone() }
+      if (error) await showAlert('Upload error: ' + error.message)
+      else { await showAlert(`Successfully uploaded ${valid.length} appeal cases!`); onDone() }
     } catch (err) {
-      alert('Failed to parse file: ' + err.message)
+      await showAlert('Failed to parse file: ' + err.message)
     }
   }
   reader.readAsArrayBuffer(file)
@@ -420,8 +424,10 @@ function AppealDetail({ caseData, onBack }) {
 
   const handleEditChange = (e) => setEditForm({ ...editForm, [e.target.name]: e.target.value })
 
-  const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this appeal case?')) return
+const { showConfirm, showAlert, ModalComponent: DetailModal } = useModal()
+const handleDelete = async () => {
+    const yes = await showConfirm('Are you sure you want to delete this appeal case?')
+    if (!yes) return
     await supabase.from('appeal_cases').delete().eq('id', caseData.id)
     onBack()
   }
@@ -484,9 +490,9 @@ function AppealDetail({ caseData, onBack }) {
     setGenerating(false)
   }
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     navigator.clipboard.writeText(letter)
-    alert('Letter copied to clipboard!')
+    await showAlert('Letter copied to clipboard!')
   }
 
   const inputClass = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -654,6 +660,7 @@ function AppealDetail({ caseData, onBack }) {
           )}
         </div>
       )}
+      {DetailModal}
     </div>
   )
 }
