@@ -165,6 +165,8 @@ function EligibilityTab() {
   const [showForm, setShowForm] = useState(false)
   const [selectedCheck, setSelectedCheck] = useState(null)
   const [search, setSearch] = useState('')
+  const [sortField, setSortField] = useState(null)
+const [sortDir, setSortDir] = useState('asc')
 
   useEffect(() => {
     fetchChecks()
@@ -179,6 +181,15 @@ function EligibilityTab() {
     setChecks(data || [])
     setLoading(false)
   }
+
+  const handleSort = (field) => {
+  if (sortField === field) {
+    setSortDir(sortDir === 'asc' ? 'desc' : 'asc')
+  } else {
+    setSortField(field)
+    setSortDir('asc')
+  }
+}
 
   // If a check is selected, show detail view
   if (selectedCheck) {
@@ -201,6 +212,22 @@ function EligibilityTab() {
     c.status?.toLowerCase().includes(q)
   )
 })
+
+const sortedChecks = [...filteredChecks].sort((a, b) => {
+  if (!sortField) return 0
+  const aVal = (a[sortField] || '').toString().toLowerCase()
+  const bVal = (b[sortField] || '').toString().toLowerCase()
+  if (aVal < bVal) return sortDir === 'asc' ? -1 : 1
+  if (aVal > bVal) return sortDir === 'asc' ? 1 : -1
+  return 0
+})
+
+const SortHeader = ({ field, label }) => (
+  <th className="text-left px-4 py-3 text-gray-500 font-medium cursor-pointer hover:text-gray-700 select-none"
+    onClick={() => handleSort(field)}>
+    {label} {sortField === field ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+  </th>
+)
 
   return (
     <div>
@@ -278,23 +305,23 @@ Patricia,Wilson,1998-02-10,Female,555-0110,Tricare,TRI-889900,GRP-66100,Prime Se
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="text-left px-4 py-3 text-gray-500 font-medium">Patient</th>
-              <th className="text-left px-4 py-3 text-gray-500 font-medium">DOB</th>
-              <th className="text-left px-4 py-3 text-gray-500 font-medium">Insurance</th>
-              <th className="text-left px-4 py-3 text-gray-500 font-medium">Member ID</th>
-              <th className="text-left px-4 py-3 text-gray-500 font-medium">Date of Service</th>
-              <th className="text-left px-4 py-3 text-gray-500 font-medium">Physician</th>
-              <th className="text-left px-4 py-3 text-gray-500 font-medium">Status</th>
+              <SortHeader field="first_name" label="Patient" />
+              <SortHeader field="date_of_birth" label="DOB" />
+              <SortHeader field="insurance_company" label="Insurance" />
+              <SortHeader field="member_id" label="Member ID" />
+              <SortHeader field="date_of_service" label="Date of Service" />
+              <SortHeader field="physician" label="Physician" />
+              <SortHeader field="status" label="Status" />
             </tr>
           </thead>
-          
+
           <tbody>
             {loading ? (
               <tr><td colSpan={7} className="text-center py-12 text-gray-400">Loading...</td></tr>
-            ) : filteredChecks.length === 0 ? (
+            ) : sortedChecks.length === 0 ? (
               <tr><td colSpan={7} className="text-center py-12 text-gray-400">No eligibility checks yet. Create one or upload a CSV.</td></tr>
             ) : (
-              filteredChecks.map(check => (
+              sortedChecks.map(check => (
                 <tr key={check.id} onClick={() => setSelectedCheck(check)}
                   className="border-t border-gray-100 hover:bg-blue-50 cursor-pointer transition">
                   <td className="px-4 py-3 font-medium">{check.first_name} {check.last_name}</td>

@@ -37,6 +37,24 @@ export default function AppealsTab() {
   const [selectedCase, setSelectedCase] = useState(null)
   const [tabKey, setTabKey] = useState(0)
   const [search, setSearch] = useState('')
+  const [sortField, setSortField] = useState(null)
+const [sortDir, setSortDir] = useState('asc')
+
+const handleSort = (field) => {
+  if (sortField === field) {
+    setSortDir(sortDir === 'asc' ? 'desc' : 'asc')
+  } else {
+    setSortField(field)
+    setSortDir('asc')
+  }
+}
+
+const SortHeader = ({ field, label }) => (
+  <th className="text-left px-4 py-3 text-gray-500 font-medium cursor-pointer hover:text-gray-700 select-none"
+    onClick={() => handleSort(field)}>
+    {label} {sortField === field ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+  </th>
+)
 
   useEffect(() => { fetchCases() }, [tabKey])
 
@@ -69,6 +87,15 @@ export default function AppealsTab() {
     c.denial_reason_code?.toLowerCase().includes(q) ||
     c.status?.toLowerCase().includes(q)
   )
+})
+
+const sortedCases = [...filteredCases].sort((a, b) => {
+  if (!sortField) return 0
+  const aVal = (a[sortField] || '').toString().toLowerCase()
+  const bVal = (b[sortField] || '').toString().toLowerCase()
+  if (aVal < bVal) return sortDir === 'asc' ? -1 : 1
+  if (aVal > bVal) return sortDir === 'asc' ? 1 : -1
+  return 0
 })
 
   return (
@@ -138,22 +165,22 @@ William Taylor,1968-05-19,HUM-112345,Humana,CLM-2005,2025-11-07,99214,185.00,CO-
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="text-left px-4 py-3 text-gray-500 font-medium">Patient</th>
-              <th className="text-left px-4 py-3 text-gray-500 font-medium">Insurance</th>
-              <th className="text-left px-4 py-3 text-gray-500 font-medium">Claim #</th>
-              <th className="text-left px-4 py-3 text-gray-500 font-medium">CPT</th>
-              <th className="text-left px-4 py-3 text-gray-500 font-medium">Denial Reason</th>
-              <th className="text-left px-4 py-3 text-gray-500 font-medium">Amount</th>
-              <th className="text-left px-4 py-3 text-gray-500 font-medium">Status</th>
+              <SortHeader field="patient_name" label="Patient" />
+              <SortHeader field="insurance_company" label="Insurance" />
+              <SortHeader field="claim_number" label="Claim #" />
+              <SortHeader field="cpt_code" label="CPT" />
+              <SortHeader field="denial_reason_code" label="Denial Reason" />
+              <SortHeader field="amount_billed" label="Amount" />
+              <SortHeader field="status" label="Status" />
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr><td colSpan={7} className="text-center py-12 text-gray-400">Loading...</td></tr>
-            ) : filteredCases.length === 0 ? (
+            ) : sortedCases.length === 0 ? (
               <tr><td colSpan={7} className="text-center py-12 text-gray-400">No appeal cases yet. Create one or upload a CSV.</td></tr>
             ) : (
-              filteredCases.map(c => (
+              sortedCases.map(c => (
                 <tr key={c.id} onClick={() => setSelectedCase(c)}
                   className="border-t border-gray-100 hover:bg-blue-50 cursor-pointer transition">
                   <td className="px-4 py-3 font-medium">{c.patient_name}</td>
