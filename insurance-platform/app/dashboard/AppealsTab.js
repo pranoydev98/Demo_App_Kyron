@@ -93,6 +93,22 @@ William Taylor,1968-05-19,HUM-112345,Humana,CLM-2005,2025-11-07,99214,185.00,CO-
         </div>
       </div>
 
+      {/* Stats Bar */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <p className="text-xs text-gray-400 mb-1">Total Cases</p>
+          <p className="text-2xl font-bold text-gray-800">{cases.length}</p>
+        </div>
+        <div className="bg-yellow-50 rounded-xl border border-yellow-100 p-4">
+          <p className="text-xs text-yellow-500 mb-1">Pending</p>
+          <p className="text-2xl font-bold text-yellow-600">{cases.filter(c => c.status === 'Pending').length}</p>
+        </div>
+        <div className="bg-green-50 rounded-xl border border-green-100 p-4">
+          <p className="text-xs text-green-500 mb-1">Letter Generated</p>
+          <p className="text-2xl font-bold text-green-600">{cases.filter(c => c.status === 'Letter Generated').length}</p>
+        </div>
+      </div>
+
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">

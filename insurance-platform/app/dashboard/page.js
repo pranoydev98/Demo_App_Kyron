@@ -196,18 +196,6 @@ function EligibilityTab() {
           <h2 className="text-2xl font-bold text-gray-800">Eligibility & Benefits</h2>
           <p className="text-gray-500 text-sm mt-1">Verify patient coverage before appointments</p>
         </div>
-        {/* <div className="flex gap-3">
-          <button onClick={() => document.getElementById('csv-upload').click()}
-            className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-600 hover:bg-gray-50 transition">
-            📁 Upload CSV
-          </button>
-          <input id="csv-upload" type="file" accept=".csv,.xlsx" className="hidden"
-            onChange={(e) => handleBulkUpload(e, fetchChecks)} />
-          <button onClick={() => setShowForm(true)}
-            className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition">
-            + New Check
-          </button>
-        </div> */}
         <div className="flex gap-3">
           <button onClick={() => {
             const headers = 'first_name,last_name,date_of_birth,sex,phone,insurance_company,member_id,group_number,plan_name,network_type,date_of_service,facility,facility_npi,physician,physician_npi,cpt_codes,place_of_service'
@@ -239,6 +227,26 @@ Patricia,Wilson,1998-02-10,Female,555-0110,Tricare,TRI-889900,GRP-66100,Prime Se
             className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition">
             + New Check
           </button>
+        </div>
+      </div>
+
+      {/* Stats Bar */}
+      <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <p className="text-xs text-gray-400 mb-1">Total Checks</p>
+          <p className="text-2xl font-bold text-gray-800">{checks.length}</p>
+        </div>
+        <div className="bg-yellow-50 rounded-xl border border-yellow-100 p-4">
+          <p className="text-xs text-yellow-500 mb-1">Pending</p>
+          <p className="text-2xl font-bold text-yellow-600">{checks.filter(c => c.status === 'Pending').length}</p>
+        </div>
+        <div className="bg-green-50 rounded-xl border border-green-100 p-4">
+          <p className="text-xs text-green-500 mb-1">Verified</p>
+          <p className="text-2xl font-bold text-green-600">{checks.filter(c => c.status === 'Verified').length}</p>
+        </div>
+        <div className="bg-red-50 rounded-xl border border-red-100 p-4">
+          <p className="text-xs text-red-500 mb-1">Not Covered</p>
+          <p className="text-2xl font-bold text-red-600">{checks.filter(c => c.status === 'Not Covered').length}</p>
         </div>
       </div>
 
@@ -780,10 +788,35 @@ const handleEditChange = (e) => {
               <h4 className="font-semibold text-gray-700 mb-2">Next Steps</h4>
               <p className="text-sm text-gray-600">{callResult.next_steps}</p>
             </div>
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <h4 className="font-semibold text-gray-700 mb-2">Call Transcript</h4>
-              <div className="text-sm text-gray-600 whitespace-pre-line">{callResult.transcript}</div>
-            </div>
+            
+<div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+  <h4 className="font-semibold text-gray-700 mb-3">Call Transcript</h4>
+  <div className="flex flex-col gap-2">
+    {callResult.transcript.split('\n').filter(line => line.trim()).map((line, i) => {
+      const trimmed = line.trim()
+      const isAI = /^AI(\s*Agent)?:/i.test(trimmed)
+      const isRep = /^(.+\s)?Rep:/i.test(trimmed) || /^(Aetna|UnitedHealthcare|Cigna|Blue Cross|Humana|Kaiser|Anthem|Molina|Tricare|Insurance)/i.test(trimmed)
+      const speaker = isAI ? 'AI' : isRep ? 'Rep' : null
+      const text = trimmed.replace(/^[^:]+:\s*/, '')
+
+      if (!speaker) return <p key={i} className="text-xs text-gray-400 text-center">{trimmed}</p>
+
+      return (
+        <div key={i} className={`flex ${isAI ? 'justify-end' : 'justify-start'}`}>
+          <div className={`max-w-[75%] rounded-lg px-4 py-2.5 text-sm ${
+            isAI ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white border border-gray-200 text-gray-700 rounded-bl-none'
+          }`}>
+            <p className={`text-xs font-bold mb-1 ${isAI ? 'text-blue-200' : 'text-gray-400'}`}>
+              {isAI ? '🤖 AI Agent' : '👤 Insurance Rep'}
+            </p>
+            {text}
+          </div>
+        </div>
+      )
+    })}
+  </div>
+</div>
+
           </div>
         )}
       </div>
