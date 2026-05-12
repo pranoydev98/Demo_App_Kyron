@@ -42,47 +42,6 @@ export default function AnalyticsTab() {
     a.href = url; a.download = 'claims_template.csv'; a.click()
   }
 
-//   const downloadReport = () => {
-//   let report = '=== REVENUE ANALYTICS REPORT ===\n\n'
-//   report += `Total Claims: ${totalClaims}\n`
-//   report += `Total Billed: $${totalBilled.toLocaleString()}\n`
-//   report += `Total Denied: $${totalDenied.toLocaleString()} (${denialRate}% denial rate)\n`
-//   report += `Underpayments Detected: $${totalUnderpaid.toLocaleString()} (${underpaid.length} claims)\n`
-//   report += `Recoverable Revenue: $${(totalDenied + totalUnderpaid).toLocaleString()}\n\n`
-
-//   report += '--- TOP FIXES ---\n'
-//   topFixes.forEach((f, i) => {
-//     report += `${i + 1}. ${f.fix} (${f.code}) → $${f.recovery.toLocaleString()} across ${f.claims} claims\n`
-//   })
-
-//   report += '\n--- DENIAL RATE BY PAYER ---\n'
-//   denialByPayer.forEach(p => {
-//     report += `${p.payer}: ${p.rate}% (${p.denied}/${p.total} claims, $${p.amount.toLocaleString()} at risk)\n`
-//   })
-
-//   report += '\n--- DENIAL RATE BY CPT CODE ---\n'
-//   denialByCPT.forEach(c => {
-//     report += `${c.code} (${c.desc}): ${c.rate}% (${c.denied}/${c.total} claims, $${c.amount.toLocaleString()} at risk)\n`
-//   })
-
-//   report += '\n--- DENIAL BY REASON ---\n'
-//   denialByReason.forEach(r => {
-//     report += `${r.code} - ${r.reason}: ${r.count} claims, $${r.amount.toLocaleString()}\n`
-//   })
-
-//   if (underpaid.length > 0) {
-//     report += '\n--- UNDERPAYMENT DETAILS ---\n'
-//     underpaid.forEach(u => {
-//       report += `${u.claim_id} | ${u.payer} | CPT ${u.cpt_code} | Paid $${u.amount_paid} vs Expected $${u.expected} | Shortfall $${u.shortfall.toFixed(2)}\n`
-//     })
-//   }
-
-//   const blob = new Blob([report], { type: 'text/plain' })
-//   const url = URL.createObjectURL(blob)
-//   const a = document.createElement('a')
-//   a.href = url; a.download = 'revenue_analytics_report.txt'; a.click()
-// }
-
 const downloadReport = () => {
   const wb = XLSX.utils.book_new()
 
@@ -178,7 +137,7 @@ if (!loaded) {
       <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
         <span className="text-5xl mb-4 block">📊</span>
         <h3 className="text-lg font-semibold text-gray-700 mb-2">Upload Claims Data</h3>
-        <p className="text-sm text-gray-400 mb-6">CSV or Excel with columns: claim_id, payer, cpt_code, amount_billed, amount_paid, status, denial_reason_code, denial_reason</p>
+        <p className="text-sm text-gray-400 mb-6">CSV or Excel with all required columns</p>
         <div className="flex gap-3 justify-center">
           <button onClick={downloadTemplate}
             className="px-6 py-3 border border-gray-300 text-gray-600 rounded-lg font-medium hover:bg-gray-50 transition">

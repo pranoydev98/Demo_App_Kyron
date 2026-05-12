@@ -41,6 +41,15 @@ export default function AppealsTab() {
   const [sortField, setSortField] = useState(null)
 const [sortDir, setSortDir] = useState('asc')
 
+const handleClearAll = async () => {
+  const yes = await showConfirm('Delete ALL appeal cases? This cannot be undone.')
+  if (!yes) return
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  await supabase.from('appeal_cases').delete().eq('user_id', user.id)
+  fetchCases()
+}
+
 const { showAlert, showConfirm, ModalComponent } = useModal()
 const handleDeleteCase = async (e, id) => {
   e.stopPropagation()
@@ -116,6 +125,10 @@ const sortedCases = [...filteredCases].sort((a, b) => {
           <p className="text-gray-500 text-sm mt-1">AI-drafted appeal letters for denied claims</p>
         </div>
         <div className="flex gap-3">
+        <button onClick={handleClearAll}
+  className="px-4 py-2 rounded-lg text-sm font-medium border border-red-200 text-red-500 hover:bg-red-50 transition">
+  Clear All
+</button>
           <button onClick={() => {
             const headers = 'patient_name,date_of_birth,member_id,insurance_company,claim_number,date_of_service,cpt_code,amount_billed,denial_reason_code,denial_reason,provider_name,provider_npi,facility_name,facility_npi,additional_context'
             const samples = `John Smith,1985-03-15,UHC-889012,UnitedHealthcare,CLM-2001,2025-11-03,99214,185.00,CO-4,Missing modifier,Dr. Sarah Chen,9876543210,Metro General Hospital,1234567890,Modifier 25 was included in original submission

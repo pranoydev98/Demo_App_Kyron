@@ -36,10 +36,10 @@ export default function DashboardPage() {
   if (!user) return null
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="h-screen bg-gray-50 flex overflow-hidden">
 
       {/* Sidebar */}
-<div className="w-64 bg-white border-r border-gray-200 flex flex-col">
+<div className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen sticky top-0">
   <div className="p-6 border-b border-gray-100">
     <h1 className="text-xl font-bold text-blue-600">The Insurance App</h1>
     <p className="text-xs text-gray-400 mt-0.5">AI-Powered Billing Platform</p>
@@ -64,7 +64,7 @@ export default function DashboardPage() {
 </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-8">
+      <div className="flex-1 p-8 overflow-y-auto">
         {activeTab === 'eligibility' && <EligibilityTab key={tabKey} />}
         {activeTab === 'analytics' && <AnalyticsTab />}
         {activeTab === 'appeals' && <AppealsTab key={tabKey} />}
@@ -168,6 +168,15 @@ function EligibilityTab() {
 const [sortDir, setSortDir] = useState('asc')
 const { showAlert, showConfirm, ModalComponent } = useModal()
 
+const handleClearAll = async () => {
+  const yes = await showConfirm('Delete ALL eligibility checks? This cannot be undone.')
+  if (!yes) return
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  await supabase.from('eligibility_checks').delete().eq('user_id', user.id)
+  fetchChecks()
+}
+
 const handleDeleteCheck = async (e, id) => {
   e.stopPropagation()
   const yes = await showConfirm('Delete this eligibility check?')
@@ -245,6 +254,10 @@ const SortHeader = ({ field, label }) => (
           <p className="text-gray-500 text-sm mt-1">Verify patient coverage before appointments</p>
         </div>
         <div className="flex gap-3">
+          <button onClick={handleClearAll}
+  className="px-4 py-2 rounded-lg text-sm font-medium border border-red-200 text-red-500 hover:bg-red-50 transition">
+  Clear All
+</button>
           <button onClick={() => {
             const headers = 'first_name,last_name,date_of_birth,sex,phone,insurance_company,member_id,group_number,plan_name,network_type,date_of_service,facility,facility_npi,physician,physician_npi,cpt_codes,place_of_service'
             const samples = `John,Smith,1985-03-15,Male,555-0101,UnitedHealthcare,UHC-889012,GRP-44521,Gold PPO,PPO,2026-02-15,Metro General Hospital,1234567890,Dr. Sarah Chen,9876543210,99213,Office
