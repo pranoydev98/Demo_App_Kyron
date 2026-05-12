@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import * as XLSX from 'xlsx'
 import { useModal } from './Modal'
+import { SAMPLE_APPEALS_CSV } from './sampleAppealsData'
 
 const DENIAL_REASONS = [
   { code: 'CO-4', reason: 'Missing modifier' },
@@ -117,124 +118,114 @@ const sortedCases = [...filteredCases].sort((a, b) => {
   return 0
 })
 
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800">Appeal Letter Generator</h2>
-          <p className="text-gray-500 text-sm mt-1">AI-drafted appeal letters for denied claims</p>
-        </div>
-        <div className="flex gap-3">
+return (
+  <div className="flex flex-col h-full">
+    {/* Header */}
+    <div className="flex items-center justify-between mb-6">
+      <div>
+        <h2 className="text-2xl font-bold text-gray-800">Appeal Letter Generator</h2>
+        <p className="text-gray-500 text-sm mt-1">AI-drafted appeal letters for denied claims</p>
+      </div>
+      <div className="flex gap-3">
         <button onClick={handleClearAll}
-  className="px-4 py-2 rounded-lg text-sm font-medium border border-red-200 text-red-500 hover:bg-red-50 transition">
-  Clear All
-</button>
-          <button onClick={() => {
-            const headers = 'patient_name,date_of_birth,member_id,insurance_company,claim_number,date_of_service,cpt_code,amount_billed,denial_reason_code,denial_reason,provider_name,provider_npi,facility_name,facility_npi,additional_context'
-            const samples = `John Smith,1985-03-15,UHC-889012,UnitedHealthcare,CLM-2001,2025-11-03,99214,185.00,CO-4,Missing modifier,Dr. Sarah Chen,9876543210,Metro General Hospital,1234567890,Modifier 25 was included in original submission
-Maria Garcia,1992-07-22,AET-556789,Aetna,CLM-2002,2025-11-04,99213,125.00,CO-197,Missing prior authorization,Dr. James Wilson,5566778899,Riverside Medical Center,1122334455,Prior auth was obtained - ref number PA-88432
-Robert Johnson,1978-11-30,CIG-334567,Cigna,CLM-2003,2025-11-05,99215,250.00,CO-16,Missing or incomplete information,Dr. Lisa Park,6677889900,St. Mary's Hospital,2233445566,All required documentation was submitted with original claim
-Emily Davis,2001-01-08,BCB-778901,Blue Cross,CLM-2004,2025-11-06,90837,175.00,CO-11,Diagnosis inconsistent with procedure,Dr. Michael Brown,7788990011,Valley Health Center,3344556677,Patient diagnosis F41.1 supports medical necessity for psychotherapy
-William Taylor,1968-05-19,HUM-112345,Humana,CLM-2005,2025-11-07,99214,185.00,CO-18,Duplicate claim,Dr. Amy Rodriguez,8899001122,Pacific Medical Group,4455667788,This is not a duplicate - dates of service differ from original claim`
-            const blob = new Blob([headers + '\n' + samples], { type: 'text/csv' })
-            const url = URL.createObjectURL(blob)
-            const a = document.createElement('a')
-            a.href = url; a.download = 'appeals_template.csv'; a.click()
-          }}
-            className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-600 hover:bg-gray-50 transition">
-            ⬇️ Template
-          </button>
-          <button onClick={() => document.getElementById('appeal-csv-upload').click()}
-            className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-600 hover:bg-gray-50 transition">
-            📁 Upload CSV
-          </button>
-          <input id="appeal-csv-upload" type="file" accept=".csv,.xlsx" className="hidden"
-            onChange={(e) => handleAppealBulkUpload(e, fetchCases, showAlert, showConfirm)} />
-          <button onClick={() => setShowForm(true)}
-            className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition">
-            + New Appeal Case
-          </button>
-        </div>
+          className="px-4 py-2 rounded-lg text-sm font-medium border border-red-200 text-red-500 hover:bg-red-50 transition">
+          Clear All
+        </button>
+        <button onClick={() => {
+          const blob = new Blob([SAMPLE_APPEALS_CSV], { type: 'text/csv' })
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url; a.download = 'appeals_template.csv'; a.click()
+        }}
+          className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-600 hover:bg-gray-50 transition">
+          ⬇️ Template
+        </button>
+        <button onClick={() => document.getElementById('appeal-csv-upload').click()}
+          className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-600 hover:bg-gray-50 transition">
+          📁 Upload CSV
+        </button>
+        <input id="appeal-csv-upload" type="file" accept=".csv,.xlsx" className="hidden"
+          onChange={(e) => handleAppealBulkUpload(e, fetchCases, showAlert, showConfirm)} />
+        <button onClick={() => setShowForm(true)}
+          className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition">
+          + New Appeal
+        </button>
       </div>
-
-      {/* Search */}
-<div className="mb-6">
-  <input
-    type="text"
-    placeholder="Search by patient name, insurance, claim number, denial reason..."
-    value={search}
-    onChange={e => setSearch(e.target.value)}
-    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-  />
-</div>
-
-      {/* Stats Bar */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-xs text-gray-400 mb-1">Total Cases</p>
-          <p className="text-2xl font-bold text-gray-800">{filteredCases.length}</p>
-        </div>
-        <div className="bg-yellow-50 rounded-xl border border-yellow-100 p-4">
-          <p className="text-xs text-yellow-500 mb-1">Pending</p>
-          <p className="text-2xl font-bold text-yellow-600">{filteredCases.filter(c => c.status === 'Pending').length}</p>
-        </div>
-        <div className="bg-green-50 rounded-xl border border-green-100 p-4">
-          <p className="text-xs text-green-500 mb-1">Letter Generated</p>
-          <p className="text-2xl font-bold text-green-600">{filteredCases.filter(c => c.status === 'Letter Generated').length}</p>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <SortHeader field="patient_name" label="Patient" />
-              <SortHeader field="insurance_company" label="Insurance" />
-              <SortHeader field="claim_number" label="Claim #" />
-              <SortHeader field="cpt_code" label="CPT" />
-              <SortHeader field="denial_reason_code" label="Denial Reason" />
-              <SortHeader field="amount_billed" label="Amount" />
-              <SortHeader field="status" label="Status" />
-              <th className="text-left px-4 py-3 text-gray-500 font-medium w-10"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={8} className="text-center py-12 text-gray-400">Loading...</td></tr>
-            ) : sortedCases.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-12 text-gray-400">No appeal cases yet. Create one or upload a CSV.</td></tr>
-            ) : (
-              sortedCases.map(c => (
-                <tr key={c.id} onClick={() => setSelectedCase(c)}
-                  className="border-t border-gray-100 hover:bg-blue-50 cursor-pointer transition">
-                  <td className="px-4 py-3 font-medium">{c.patient_name}</td>
-                  <td className="px-4 py-3">{c.insurance_company}</td>
-                  <td className="px-4 py-3">{c.claim_number}</td>
-                  <td className="px-4 py-3">{c.cpt_code}</td>
-                  <td className="px-4 py-3">{c.denial_reason_code} - {c.denial_reason}</td>
-                  <td className="px-4 py-3">${c.amount_billed}</td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      c.status === 'Letter Generated' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {c.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <button onClick={(e) => handleDeleteCase(e, c.id)}
-                      className="text-gray-400 hover:text-red-500 transition text-lg font-bold">
-                      ×
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-      {ModalComponent}
     </div>
-  )
+
+    {/* Search */}
+    <div className="mb-4">
+      <input type="text" placeholder="Search by patient name, insurance, claim number, denial reason..."
+        value={search} onChange={e => setSearch(e.target.value)}
+        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+    </div>
+
+    {/* Stats */}
+    <div className="grid grid-cols-3 gap-4 mb-4">
+      <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <p className="text-xs text-gray-400 mb-1">Total Cases</p>
+        <p className="text-2xl font-bold text-gray-800">{filteredCases.length}</p>
+      </div>
+      <div className="bg-yellow-50 rounded-xl border border-yellow-100 p-4">
+        <p className="text-xs text-yellow-500 mb-1">Pending</p>
+        <p className="text-2xl font-bold text-yellow-600">{filteredCases.filter(c => c.status === 'Pending').length}</p>
+      </div>
+      <div className="bg-green-50 rounded-xl border border-green-100 p-4">
+        <p className="text-xs text-green-500 mb-1">Letter Generated</p>
+        <p className="text-2xl font-bold text-green-600">{filteredCases.filter(c => c.status === 'Letter Generated').length}</p>
+      </div>
+    </div>
+
+    {/* Table with fixed header and scrollable body */}
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex-1 min-h-0 overflow-y-auto">
+  <table className="w-full text-sm">
+    <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+      <tr>
+        <SortHeader field="patient_name" label="Patient" />
+        <SortHeader field="insurance_company" label="Insurance" />
+        <SortHeader field="claim_number" label="Claim #" />
+        <SortHeader field="cpt_code" label="CPT" />
+        <SortHeader field="denial_reason_code" label="Denial Reason" />
+        <SortHeader field="amount_billed" label="Amount" />
+        <SortHeader field="status" label="Status" />
+        <th className="text-left px-4 py-3 text-gray-500 font-medium w-10"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {loading ? (
+        <tr><td colSpan={8} className="text-center py-12 text-gray-400">Loading...</td></tr>
+      ) : sortedCases.length === 0 ? (
+        <tr><td colSpan={8} className="text-center py-12 text-gray-400">{search ? 'No matching results' : 'No appeal cases yet. Create one or upload a CSV.'}</td></tr>
+      ) : (
+        sortedCases.map(c => (
+          <tr key={c.id} onClick={() => setSelectedCase(c)}
+            className="border-t border-gray-100 hover:bg-blue-50 cursor-pointer transition">
+            <td className="px-4 py-3 font-medium">{c.patient_name}</td>
+            <td className="px-4 py-3">{c.insurance_company}</td>
+            <td className="px-4 py-3">{c.claim_number}</td>
+            <td className="px-4 py-3">{c.cpt_code}</td>
+            <td className="px-4 py-3">{c.denial_reason_code} - {c.denial_reason}</td>
+            <td className="px-4 py-3">${c.amount_billed}</td>
+            <td className="px-4 py-3">
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                c.status === 'Letter Generated' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+              }`}>{c.status}</span>
+            </td>
+            <td className="px-4 py-3">
+              <button onClick={(e) => handleDeleteCase(e, c.id)}
+                className="text-gray-400 hover:text-red-500 transition text-lg font-bold">×</button>
+            </td>
+          </tr>
+        ))
+      )}
+    </tbody>
+  </table>
+</div>
+    
+    {ModalComponent}
+  </div>
+)
+
 }
 
 async function handleAppealBulkUpload(e, onDone, showAlert, showConfirm) {

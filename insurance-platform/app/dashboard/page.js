@@ -6,6 +6,7 @@ import * as XLSX from 'xlsx'
 import AnalyticsTab from './AnalyticsTab'
 import AppealsTab from './AppealsTab'
 import { useModal } from './Modal'
+import { SAMPLE_ELIGIBILITY_CSV } from './sampleEligibilityData'
 
 const TABS = [
   { key: 'eligibility', label: 'Eligibility & Benefits', icon: '🛡️' },
@@ -246,136 +247,119 @@ const SortHeader = ({ field, label }) => (
   </th>
 )
 
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800">Eligibility & Benefits</h2>
-          <p className="text-gray-500 text-sm mt-1">Verify patient coverage before appointments</p>
-        </div>
-        <div className="flex gap-3">
-          <button onClick={handleClearAll}
-  className="px-4 py-2 rounded-lg text-sm font-medium border border-red-200 text-red-500 hover:bg-red-50 transition">
-  Clear All
-</button>
-          <button onClick={() => {
-            const headers = 'first_name,last_name,date_of_birth,sex,phone,insurance_company,member_id,group_number,plan_name,network_type,date_of_service,facility,facility_npi,physician,physician_npi,cpt_codes,place_of_service'
-            const samples = `John,Smith,1985-03-15,Male,555-0101,UnitedHealthcare,UHC-889012,GRP-44521,Gold PPO,PPO,2026-02-15,Metro General Hospital,1234567890,Dr. Sarah Chen,9876543210,99213,Office
-Maria,Garcia,1992-07-22,Female,555-0102,Aetna,AET-556789,GRP-88234,Silver HMO,HMO,2026-02-16,Riverside Medical Center,1122334455,Dr. James Wilson,5566778899,99214,Office
-Robert,Johnson,1978-11-30,Male,555-0103,Cigna,CIG-334567,GRP-77123,Platinum PPO,PPO,2026-02-17,St. Mary's Hospital,2233445566,Dr. Lisa Park,6677889900,99215,Outpatient Hospital
-Emily,Davis,2001-01-08,Female,555-0104,Blue Cross,BCB-778901,GRP-55678,Bronze EPO,EPO,2026-02-18,Valley Health Center,3344556677,Dr. Michael Brown,7788990011,99213,Telehealth
-William,Taylor,1968-05-19,Male,555-0105,Humana,HUM-112345,GRP-99012,Gold HMO,HMO,2026-02-19,Pacific Medical Group,4455667788,Dr. Amy Rodriguez,8899001122,90837,Office
-Sarah,Martinez,1990-03-25,Female,555-0106,Kaiser Permanente,KP-445566,GRP-33210,Silver PPO,PPO,2026-02-20,Sunnyvale Community Hospital,5566778800,Dr. David Kim,9900112233,99214,Emergency Room
-James,Anderson,1955-12-01,Male,555-0107,Medicare,MCR-998877,GRP-11200,Medicare Advantage,HMO,2026-02-21,Veterans Memorial Hospital,6677889911,Dr. Rachel Green,1011121314,99215,Inpatient Hospital
-Linda,Thomas,1983-09-14,Female,555-0108,Anthem,ANT-667788,GRP-44300,Gold PPO,PPO,2026-02-22,Lakeside Medical Center,7788990022,Dr. Kevin Patel,1213141516,99213,Office
-Carlos,Hernandez,1975-06-28,Male,555-0109,Molina Healthcare,MOL-223344,GRP-77500,Medicaid Managed,HMO,2026-02-23,Central Valley Clinic,8899001133,Dr. Susan Lee,1314151617,90834,Ambulatory Surgical Center
-Patricia,Wilson,1998-02-10,Female,555-0110,Tricare,TRI-889900,GRP-66100,Prime Select,PPO,2026-02-24,Fort Sam Medical Center,9900112244,Dr. Thomas Wright,1415161718,99395,Office`
-            const blob = new Blob([headers + '\n' + samples], { type: 'text/csv' })
-            const url = URL.createObjectURL(blob)
-            const a = document.createElement('a')
-            a.href = url; a.download = 'eligibility_template.csv'; a.click()
-          }}
-            className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-600 hover:bg-gray-50 transition">
-            ⬇️ Template
-          </button>
-          <button onClick={() => document.getElementById('csv-upload').click()}
-            className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-600 hover:bg-gray-50 transition">
-            📁 Upload CSV
-          </button>
-          <input id="csv-upload" type="file" accept=".csv,.xlsx" className="hidden"
-            onChange={(e) => handleBulkUpload(e, fetchChecks, showAlert, showConfirm)} />
-          <button onClick={() => setShowForm(true)}
-            className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition">
-            + New Check
-          </button>
-        </div>
+return (
+  <div className="flex flex-col h-full">
+    {/* Header */}
+    <div className="flex items-center justify-between mb-6">
+      <div>
+        <h2 className="text-2xl font-bold text-gray-800">Eligibility & Benefits</h2>
+        <p className="text-gray-500 text-sm mt-1">Verify patient coverage before appointments</p>
       </div>
-
-      {/* Search */}
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Search by patient name, insurance, member ID, physician..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+      <div className="flex gap-3">
+        <button onClick={handleClearAll}
+          className="px-4 py-2 rounded-lg text-sm font-medium border border-red-200 text-red-500 hover:bg-red-50 transition">
+          Clear All
+        </button>
+        <button onClick={() => {
+          const blob = new Blob([SAMPLE_ELIGIBILITY_CSV], { type: 'text/csv' })
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url; a.download = 'eligibility_template.csv'; a.click()
+        }}
+          className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-600 hover:bg-gray-50 transition">
+          ⬇️ Template
+        </button>
+        <button onClick={() => document.getElementById('csv-upload').click()}
+          className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-600 hover:bg-gray-50 transition">
+          📁 Upload CSV
+        </button>
+        <input id="csv-upload" type="file" accept=".csv,.xlsx" className="hidden"
+          onChange={(e) => handleBulkUpload(e, fetchChecks, showAlert, showConfirm)} />
+        <button onClick={() => setShowForm(true)}
+          className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition">
+          + New Check
+        </button>
       </div>
-
-      {/* Stats Bar */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-xs text-gray-400 mb-1">Total Checks</p>
-          <p className="text-2xl font-bold text-gray-800">{filteredChecks.length}</p>
-        </div>
-        <div className="bg-yellow-50 rounded-xl border border-yellow-100 p-4">
-          <p className="text-xs text-yellow-500 mb-1">Pending</p>
-          <p className="text-2xl font-bold text-yellow-600">{filteredChecks.filter(c => c.status === 'Pending').length}</p>
-        </div>
-        <div className="bg-green-50 rounded-xl border border-green-100 p-4">
-          <p className="text-xs text-green-500 mb-1">Verified</p>
-          <p className="text-2xl font-bold text-green-600">{filteredChecks.filter(c => c.status === 'Verified').length}</p>
-        </div>
-        <div className="bg-red-50 rounded-xl border border-red-100 p-4">
-          <p className="text-xs text-red-500 mb-1">Not Covered</p>
-          <p className="text-2xl font-bold text-red-600">{filteredChecks.filter(c => c.status === 'Not Covered').length}</p>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <SortHeader field="first_name" label="Patient" />
-              <SortHeader field="date_of_birth" label="DOB" />
-              <SortHeader field="insurance_company" label="Insurance" />
-              <SortHeader field="member_id" label="Member ID" />
-              <SortHeader field="date_of_service" label="Date of Service" />
-              <SortHeader field="physician" label="Physician" />
-              <SortHeader field="status" label="Status" />
-              <th className="text-left px-4 py-3 text-gray-500 font-medium w-10"></th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={8} className="text-center py-12 text-gray-400">Loading...</td></tr>
-            ) : sortedChecks.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-12 text-gray-400">No eligibility checks yet. Create one or upload a CSV.</td></tr>
-            ) : (
-              sortedChecks.map(check => (
-                <tr key={check.id} onClick={() => setSelectedCheck(check)}
-                  className="border-t border-gray-100 hover:bg-blue-50 cursor-pointer transition">
-                  <td className="px-4 py-3 font-medium">{check.first_name} {check.last_name}</td>
-                  <td className="px-4 py-3">{check.date_of_birth}</td>
-                  <td className="px-4 py-3">{check.insurance_company}</td>
-                  <td className="px-4 py-3">{check.member_id}</td>
-                  <td className="px-4 py-3">{check.date_of_service}</td>
-                  <td className="px-4 py-3">{check.physician}</td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      check.status === 'Verified' ? 'bg-green-100 text-green-700' :
-                      check.status === 'Not Covered' ? 'bg-red-100 text-red-700' :
-                      'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {check.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <button onClick={(e) => handleDeleteCheck(e, check.id)}
-                      className="text-gray-400 hover:text-red-500 transition text-lg font-bold">
-                      ×
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-      {ModalComponent}
     </div>
-  )
+
+    {/* Search */}
+    <div className="mb-4">
+      <input type="text" placeholder="Search by patient name, insurance, member ID, physician..."
+        value={search} onChange={e => setSearch(e.target.value)}
+        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+    </div>
+
+    {/* Stats */}
+    <div className="grid grid-cols-4 gap-4 mb-4">
+      <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <p className="text-xs text-gray-400 mb-1">Total Checks</p>
+        <p className="text-2xl font-bold text-gray-800">{filteredChecks.length}</p>
+      </div>
+      <div className="bg-yellow-50 rounded-xl border border-yellow-100 p-4">
+        <p className="text-xs text-yellow-500 mb-1">Pending</p>
+        <p className="text-2xl font-bold text-yellow-600">{filteredChecks.filter(c => c.status === 'Pending').length}</p>
+      </div>
+      <div className="bg-green-50 rounded-xl border border-green-100 p-4">
+        <p className="text-xs text-green-500 mb-1">Verified</p>
+        <p className="text-2xl font-bold text-green-600">{filteredChecks.filter(c => c.status === 'Verified').length}</p>
+      </div>
+      <div className="bg-red-50 rounded-xl border border-red-100 p-4">
+        <p className="text-xs text-red-500 mb-1">Not Covered</p>
+        <p className="text-2xl font-bold text-red-600">{filteredChecks.filter(c => c.status === 'Not Covered').length}</p>
+      </div>
+    </div>
+
+    {/* Table with fixed header and scrollable body */}
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex-1 min-h-0 overflow-y-auto">
+  <table className="w-full text-sm">
+    <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+      <tr>
+        <SortHeader field="first_name" label="Patient" />
+        <SortHeader field="date_of_birth" label="DOB" />
+        <SortHeader field="insurance_company" label="Insurance" />
+        <SortHeader field="member_id" label="Member ID" />
+        <SortHeader field="date_of_service" label="Date of Service" />
+        <SortHeader field="physician" label="Physician" />
+        <SortHeader field="status" label="Status" />
+        <th className="text-left px-4 py-3 text-gray-500 font-medium w-10"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {loading ? (
+        <tr><td colSpan={8} className="text-center py-12 text-gray-400">Loading...</td></tr>
+      ) : sortedChecks.length === 0 ? (
+        <tr><td colSpan={8} className="text-center py-12 text-gray-400">{search ? 'No matching results' : 'No eligibility checks yet. Create one or upload a CSV.'}</td></tr>
+      ) : (
+        sortedChecks.map(check => (
+          <tr key={check.id} onClick={() => setSelectedCheck(check)}
+            className="border-t border-gray-100 hover:bg-blue-50 cursor-pointer transition">
+            <td className="px-4 py-3 font-medium">{check.first_name} {check.last_name}</td>
+            <td className="px-4 py-3">{check.date_of_birth}</td>
+            <td className="px-4 py-3">{check.insurance_company}</td>
+            <td className="px-4 py-3">{check.member_id}</td>
+            <td className="px-4 py-3">{check.date_of_service}</td>
+            <td className="px-4 py-3">{check.physician}</td>
+            <td className="px-4 py-3">
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                check.status === 'Verified' ? 'bg-green-100 text-green-700' :
+                check.status === 'Not Covered' ? 'bg-red-100 text-red-700' :
+                'bg-yellow-100 text-yellow-700'
+              }`}>{check.status}</span>
+            </td>
+            <td className="px-4 py-3">
+              <button onClick={(e) => handleDeleteCheck(e, check.id)}
+                className="text-gray-400 hover:text-red-500 transition text-lg font-bold">×</button>
+            </td>
+          </tr>
+        ))
+      )}
+    </tbody>
+  </table>
+</div>
+    {ModalComponent}
+  </div>
+)
+
 }
 
 function EligibilityForm({ onBack, onCreated }) {
