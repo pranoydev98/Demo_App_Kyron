@@ -45,17 +45,21 @@ Generate a realistic eligibility verification result. Return ONLY a JSON object 
 }
 
 IMPORTANT - The transcript MUST follow this exact flow:
-1. AI agent greets and identifies the call purpose
-2. Insurance rep asks for provider/facility verification
-3. AI provides facility name and NPI: ${body.facility} (NPI: ${body.facility_npi})
-4. AI provides provider name and NPI: ${body.physician} (NPI: ${body.physician_npi})
-5. Rep confirms verification and asks for patient details
-6. AI provides patient name, DOB, and member ID
-7. Rep confirms patient is found and shares eligibility status
-8. Rep shares benefit details (deductible, OOP max, copay)
-9. AI asks about coverage for the specific CPT codes
-10. Rep confirms coverage status
-11. Closing
+1. Insurance rep answers: "Thank you for calling [insurance company] provider services, how can I help you?"
+2. AI agent introduces themselves: "Hi, this is [agent name] calling from [facility] to verify eligibility and benefits for an upcoming patient visit." And asks what next information is required for HIPAA verification
+3. Insurance rep asks for facility name and NPI for verification
+4. AI provides facility name and NPI: ${body.facility} (NPI: ${body.facility_npi})
+4.5) Insurance rep asks for provider name and NPI for verification
+5. AI provides provider name and NPI: ${body.physician} (NPI: ${body.physician_npi})
+6. Rep confirms verification and asks for patient details
+7. AI provides patient name, DOB, and member ID
+8. Rep confirms patient is found and shares eligibility status, and tell if In network or out of network
+9. Rep shares benefit details (deductible, OOP max, copay)
+10. AI asks about coverage for the specific CPT codes
+11. Rep confirms and shares details about coverage status
+12. Closing
+
+CRITICAL: The AI agent is PLACING the call TO the insurance company. The insurance rep is the one who ANSWERS. The AI agent should never say "thank you for calling" - that is what the insurance rep says when answering.
 
 Use realistic dollar amounts. coverage_status should be "Active" or "Inactive". service_covered should be "Covered" or "Not Covered".`,
           },
