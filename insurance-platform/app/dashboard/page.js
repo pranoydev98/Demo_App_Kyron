@@ -168,6 +168,13 @@ function EligibilityTab() {
   const [sortField, setSortField] = useState(null)
 const [sortDir, setSortDir] = useState('asc')
 
+const handleDeleteCheck = async (e, id) => {
+  e.stopPropagation()
+  if (!confirm('Delete this eligibility check?')) return
+  await supabase.from('eligibility_checks').delete().eq('id', id)
+  fetchChecks()
+}
+
   useEffect(() => {
     fetchChecks()
   }, [])
@@ -312,14 +319,15 @@ Patricia,Wilson,1998-02-10,Female,555-0110,Tricare,TRI-889900,GRP-66100,Prime Se
               <SortHeader field="date_of_service" label="Date of Service" />
               <SortHeader field="physician" label="Physician" />
               <SortHeader field="status" label="Status" />
+              <th className="text-left px-4 py-3 text-gray-500 font-medium w-10"></th>
             </tr>
           </thead>
 
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} className="text-center py-12 text-gray-400">Loading...</td></tr>
+              <tr><td colSpan={8} className="text-center py-12 text-gray-400">Loading...</td></tr>
             ) : sortedChecks.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-12 text-gray-400">No eligibility checks yet. Create one or upload a CSV.</td></tr>
+              <tr><td colSpan={8} className="text-center py-12 text-gray-400">No eligibility checks yet. Create one or upload a CSV.</td></tr>
             ) : (
               sortedChecks.map(check => (
                 <tr key={check.id} onClick={() => setSelectedCheck(check)}
@@ -338,6 +346,12 @@ Patricia,Wilson,1998-02-10,Female,555-0110,Tricare,TRI-889900,GRP-66100,Prime Se
                     }`}>
                       {check.status}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <button onClick={(e) => handleDeleteCheck(e, check.id)}
+                      className="text-gray-400 hover:text-red-500 transition text-lg font-bold">
+                      ×
+                    </button>
                   </td>
                 </tr>
               ))

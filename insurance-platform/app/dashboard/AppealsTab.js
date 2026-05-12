@@ -40,6 +40,13 @@ export default function AppealsTab() {
   const [sortField, setSortField] = useState(null)
 const [sortDir, setSortDir] = useState('asc')
 
+const handleDeleteCase = async (e, id) => {
+  e.stopPropagation()
+  if (!confirm('Delete this appeal case?')) return
+  await supabase.from('appeal_cases').delete().eq('id', id)
+  fetchCases()
+}
+
 const handleSort = (field) => {
   if (sortField === field) {
     setSortDir(sortDir === 'asc' ? 'desc' : 'asc')
@@ -172,13 +179,14 @@ William Taylor,1968-05-19,HUM-112345,Humana,CLM-2005,2025-11-07,99214,185.00,CO-
               <SortHeader field="denial_reason_code" label="Denial Reason" />
               <SortHeader field="amount_billed" label="Amount" />
               <SortHeader field="status" label="Status" />
+              <th className="text-left px-4 py-3 text-gray-500 font-medium w-10"></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} className="text-center py-12 text-gray-400">Loading...</td></tr>
+              <tr><td colSpan={8} className="text-center py-12 text-gray-400">Loading...</td></tr>
             ) : sortedCases.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-12 text-gray-400">No appeal cases yet. Create one or upload a CSV.</td></tr>
+              <tr><td colSpan={8} className="text-center py-12 text-gray-400">No appeal cases yet. Create one or upload a CSV.</td></tr>
             ) : (
               sortedCases.map(c => (
                 <tr key={c.id} onClick={() => setSelectedCase(c)}
@@ -195,6 +203,12 @@ William Taylor,1968-05-19,HUM-112345,Humana,CLM-2005,2025-11-07,99214,185.00,CO-
                     }`}>
                       {c.status}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <button onClick={(e) => handleDeleteCase(e, c.id)}
+                      className="text-gray-400 hover:text-red-500 transition text-lg font-bold">
+                      ×
+                    </button>
                   </td>
                 </tr>
               ))
