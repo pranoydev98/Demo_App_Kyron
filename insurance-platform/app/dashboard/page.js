@@ -861,7 +861,7 @@ const handleEditChange = (e) => {
   <div className="flex flex-col gap-2">
     {callResult.transcript.split('\n').filter(line => line.trim()).map((line, i) => {
       const trimmed = line.trim()
-      const isAI = /^AI(\s*Agent)?:/i.test(trimmed)
+     const isAI = /^(AI(\s*Agent)?|Agent):/i.test(trimmed)
       const isRep = /^(.+\s)?Rep:/i.test(trimmed) || /^(Aetna|UnitedHealthcare|Cigna|Blue Cross|Humana|Kaiser|Anthem|Molina|Tricare|Insurance)/i.test(trimmed)
       const speaker = isAI ? 'AI' : isRep ? 'Rep' : null
       const text = trimmed.replace(/^[^:]+:\s*/, '')
