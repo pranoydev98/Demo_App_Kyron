@@ -164,6 +164,7 @@ function EligibilityTab() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [selectedCheck, setSelectedCheck] = useState(null)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     fetchChecks()
@@ -188,6 +189,18 @@ function EligibilityTab() {
   if (showForm) {
     return <EligibilityForm onBack={() => setShowForm(false)} onCreated={() => { setShowForm(false); fetchChecks() }} />
   }
+
+  const filteredChecks = checks.filter(c => {
+  if (!search.trim()) return true
+  const q = search.toLowerCase()
+  return (
+    (c.first_name + ' ' + c.last_name).toLowerCase().includes(q) ||
+    c.insurance_company?.toLowerCase().includes(q) ||
+    c.member_id?.toLowerCase().includes(q) ||
+    c.physician?.toLowerCase().includes(q) ||
+    c.status?.toLowerCase().includes(q)
+  )
+})
 
   return (
     <div>
@@ -230,23 +243,34 @@ Patricia,Wilson,1998-02-10,Female,555-0110,Tricare,TRI-889900,GRP-66100,Prime Se
         </div>
       </div>
 
+      {/* Search */}
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Search by patient name, insurance, member ID, physician..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
       {/* Stats Bar */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <p className="text-xs text-gray-400 mb-1">Total Checks</p>
-          <p className="text-2xl font-bold text-gray-800">{checks.length}</p>
+          <p className="text-2xl font-bold text-gray-800">{filteredChecks.length}</p>
         </div>
         <div className="bg-yellow-50 rounded-xl border border-yellow-100 p-4">
           <p className="text-xs text-yellow-500 mb-1">Pending</p>
-          <p className="text-2xl font-bold text-yellow-600">{checks.filter(c => c.status === 'Pending').length}</p>
+          <p className="text-2xl font-bold text-yellow-600">{filteredChecks.filter(c => c.status === 'Pending').length}</p>
         </div>
         <div className="bg-green-50 rounded-xl border border-green-100 p-4">
           <p className="text-xs text-green-500 mb-1">Verified</p>
-          <p className="text-2xl font-bold text-green-600">{checks.filter(c => c.status === 'Verified').length}</p>
+          <p className="text-2xl font-bold text-green-600">{filteredChecks.filter(c => c.status === 'Verified').length}</p>
         </div>
         <div className="bg-red-50 rounded-xl border border-red-100 p-4">
           <p className="text-xs text-red-500 mb-1">Not Covered</p>
-          <p className="text-2xl font-bold text-red-600">{checks.filter(c => c.status === 'Not Covered').length}</p>
+          <p className="text-2xl font-bold text-red-600">{filteredChecks.filter(c => c.status === 'Not Covered').length}</p>
         </div>
       </div>
 
@@ -263,13 +287,14 @@ Patricia,Wilson,1998-02-10,Female,555-0110,Tricare,TRI-889900,GRP-66100,Prime Se
               <th className="text-left px-4 py-3 text-gray-500 font-medium">Status</th>
             </tr>
           </thead>
+          
           <tbody>
             {loading ? (
               <tr><td colSpan={7} className="text-center py-12 text-gray-400">Loading...</td></tr>
-            ) : checks.length === 0 ? (
+            ) : filteredChecks.length === 0 ? (
               <tr><td colSpan={7} className="text-center py-12 text-gray-400">No eligibility checks yet. Create one or upload a CSV.</td></tr>
             ) : (
-              checks.map(check => (
+              filteredChecks.map(check => (
                 <tr key={check.id} onClick={() => setSelectedCheck(check)}
                   className="border-t border-gray-100 hover:bg-blue-50 cursor-pointer transition">
                   <td className="px-4 py-3 font-medium">{check.first_name} {check.last_name}</td>

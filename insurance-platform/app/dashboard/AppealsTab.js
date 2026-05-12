@@ -36,6 +36,7 @@ export default function AppealsTab() {
   const [showForm, setShowForm] = useState(false)
   const [selectedCase, setSelectedCase] = useState(null)
   const [tabKey, setTabKey] = useState(0)
+  const [search, setSearch] = useState('')
 
   useEffect(() => { fetchCases() }, [tabKey])
 
@@ -56,6 +57,19 @@ export default function AppealsTab() {
   if (showForm) {
     return <AppealForm onBack={() => setShowForm(false)} onCreated={() => { setShowForm(false); fetchCases() }} />
   }
+
+  const filteredCases = cases.filter(c => {
+  if (!search.trim()) return true
+  const q = search.toLowerCase()
+  return (
+    c.patient_name?.toLowerCase().includes(q) ||
+    c.insurance_company?.toLowerCase().includes(q) ||
+    c.claim_number?.toLowerCase().includes(q) ||
+    c.denial_reason?.toLowerCase().includes(q) ||
+    c.denial_reason_code?.toLowerCase().includes(q) ||
+    c.status?.toLowerCase().includes(q)
+  )
+})
 
   return (
     <div>
@@ -93,19 +107,30 @@ William Taylor,1968-05-19,HUM-112345,Humana,CLM-2005,2025-11-07,99214,185.00,CO-
         </div>
       </div>
 
+      {/* Search */}
+<div className="mb-6">
+  <input
+    type="text"
+    placeholder="Search by patient name, insurance, claim number, denial reason..."
+    value={search}
+    onChange={e => setSearch(e.target.value)}
+    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+  />
+</div>
+
       {/* Stats Bar */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <p className="text-xs text-gray-400 mb-1">Total Cases</p>
-          <p className="text-2xl font-bold text-gray-800">{cases.length}</p>
+          <p className="text-2xl font-bold text-gray-800">{filteredCases.length}</p>
         </div>
         <div className="bg-yellow-50 rounded-xl border border-yellow-100 p-4">
           <p className="text-xs text-yellow-500 mb-1">Pending</p>
-          <p className="text-2xl font-bold text-yellow-600">{cases.filter(c => c.status === 'Pending').length}</p>
+          <p className="text-2xl font-bold text-yellow-600">{filteredCases.filter(c => c.status === 'Pending').length}</p>
         </div>
         <div className="bg-green-50 rounded-xl border border-green-100 p-4">
           <p className="text-xs text-green-500 mb-1">Letter Generated</p>
-          <p className="text-2xl font-bold text-green-600">{cases.filter(c => c.status === 'Letter Generated').length}</p>
+          <p className="text-2xl font-bold text-green-600">{filteredCases.filter(c => c.status === 'Letter Generated').length}</p>
         </div>
       </div>
 
@@ -125,10 +150,10 @@ William Taylor,1968-05-19,HUM-112345,Humana,CLM-2005,2025-11-07,99214,185.00,CO-
           <tbody>
             {loading ? (
               <tr><td colSpan={7} className="text-center py-12 text-gray-400">Loading...</td></tr>
-            ) : cases.length === 0 ? (
+            ) : filteredCases.length === 0 ? (
               <tr><td colSpan={7} className="text-center py-12 text-gray-400">No appeal cases yet. Create one or upload a CSV.</td></tr>
             ) : (
-              cases.map(c => (
+              filteredCases.map(c => (
                 <tr key={c.id} onClick={() => setSelectedCase(c)}
                   className="border-t border-gray-100 hover:bg-blue-50 cursor-pointer transition">
                   <td className="px-4 py-3 font-medium">{c.patient_name}</td>
